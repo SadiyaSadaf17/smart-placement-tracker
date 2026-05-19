@@ -34,12 +34,14 @@ export default function DashboardLayout({ title: layoutTitle }) {
   const pageTitle = PAGE_TITLES[location.pathname] || layoutTitle;
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="flex min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950">
       <Sidebar role={user?.role} open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+      <div className="flex min-h-screen w-full flex-col">
         <Header onMenuClick={() => setSidebarOpen(true)} title={pageTitle} />
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
-          <Outlet />
+        <main className="flex-1 overflow-auto">
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

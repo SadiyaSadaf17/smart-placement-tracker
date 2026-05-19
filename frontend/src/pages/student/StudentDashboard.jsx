@@ -1,12 +1,14 @@
 import { Link } from 'react-router-dom';
-import { FileText, Building2, TrendingUp, Award } from 'lucide-react';
+import { FileText, Building2, TrendingUp, Award, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
 import StatCard from '../../components/ui/StatCard';
 import Card from '../../components/ui/Card';
 import Badge from '../../components/ui/Badge';
 import PageHeader from '../../components/ui/PageHeader';
+import Button from '../../components/ui/Button';
 import { useFetch } from '../../hooks/useFetch';
 import { LoadingGrid, ErrorState } from '../../components/ui/PageState';
+import { Grid } from '../../components/ui/Divider';
 
 export default function StudentDashboard() {
   const analytics = useFetch(() => api.get('/students/analytics').then((r) => r.data), []);
@@ -18,7 +20,7 @@ export default function StudentDashboard() {
   const insights = ai.data;
 
   return (
-    <section className="animate-fade-in space-y-6">
+    <section className="animate-fade-in space-y-8">
       <PageHeader
         title="My Dashboard"
         description="Track applications, ATS score, and placement readiness"
@@ -38,50 +40,114 @@ export default function StudentDashboard() {
 
       {!loading && !error && (
         <>
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard title="Applications" value={stats?.totalApplications ?? 0} icon={FileText} color="blue" />
-            <StatCard title="In Progress" value={stats?.inProgress ?? 0} icon={Building2} color="purple" />
-            <StatCard title="Selected" value={stats?.selected ?? 0} icon={Award} color="green" />
+          {/* Key Stats */}
+          <Grid columns={4} gap={4}>
+            <StatCard 
+              title="Applications" 
+              value={stats?.totalApplications ?? 0} 
+              icon={FileText} 
+              color="blue"
+              subtitle="Total applied"
+            />
+            <StatCard 
+              title="In Progress" 
+              value={stats?.inProgress ?? 0} 
+              icon={Building2} 
+              color="purple"
+              subtitle="Under review"
+            />
+            <StatCard 
+              title="Selected" 
+              value={stats?.selected ?? 0} 
+              icon={Award} 
+              color="green"
+              subtitle="Offers received"
+            />
             <StatCard
               title="ATS Score"
               value={`${stats?.atsScore ?? insights?.atsScore ?? 0}%`}
               icon={TrendingUp}
               color="orange"
+              subtitle="Resume score"
             />
-          </section>
+          </Grid>
 
-          <section className="grid gap-6 lg:grid-cols-2">
-            <Card title="Placement Prediction" subtitle="Heuristic model based on your profile">
-              <p className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                {insights?.placementPrediction?.probability ?? 0}%
-              </p>
-              <p className="mt-2 text-sm text-slate-500">
-                Factors: CGPA, skills, projects, backlogs, resume
-              </p>
-              <Link to="/student/resume" className="mt-4 inline-block text-sm font-medium text-blue-600 hover:underline">
-                Improve with Resume Analyzer →
-              </Link>
+          {/* Main Cards */}
+          <Grid columns={2} gap={6}>
+            {/* Placement Prediction */}
+            <Card variant="gradient" title="Placement Prediction" subtitle="AI-powered probability model">
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-baseline gap-2">
+                    <p className="text-5xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                      {insights?.placementPrediction?.probability ?? 0}%
+                    </p>
+                    <span className="text-sm text-slate-500">probability</span>
+                  </div>
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-400">
+                    Based on CGPA, skills, projects, backlogs, and resume quality
+                  </p>
+                </div>
+                <Link to="/student/resume" className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 dark:text-blue-400 hover:dark:text-blue-300 transition-colors">
+                  Improve with Resume Analyzer <ArrowRight size={16} />
+                </Link>
+              </div>
             </Card>
-            <Card
-              title="Recommended Drives"
-              action={<Link to="/student/companies" className="text-sm font-medium text-blue-600">View all</Link>}
+
+            {/* Recommended Drives */}
+            <Card 
+              title="Recommended Drives" 
+              subtitle="Best match for your profile"
+              action={
+                <Link to="/student/companies" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
+                  View all
+                </Link>
+              }
             >
-              <ul className="space-y-2">
+              <div className="space-y-3">
                 {(insights?.recommendations || []).slice(0, 4).map(({ drive }) => (
-                  <li
+                  <div
                     key={drive._id}
-                    className="flex items-center justify-between rounded-xl bg-slate-50 p-3 transition hover:bg-slate-100 dark:bg-slate-800/50 dark:hover:bg-slate-800"
+                    className="flex items-center justify-between rounded-xl bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-800/40 dark:to-slate-800/20 p-4 transition-all duration-200 hover:shadow-md hover:from-slate-100 dark:hover:from-slate-800/60"
                   >
-                    <span className="text-sm font-medium">{drive.companyName} — {drive.role}</span>
-                    <Badge variant="info">{drive.package} LPA</Badge>
-                  </li>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-slate-900 dark:text-white truncate">{drive.companyName}</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{drive.role}</p>
+                    </div>
+                    <Badge variant="info" size="md">{drive.package} LPA</Badge>
+                  </div>
                 ))}
                 {!insights?.recommendations?.length && (
-                  <p className="text-sm text-slate-500">Complete your profile to get recommendations.</p>
+                  <div className="rounded-xl bg-slate-50/50 dark:bg-slate-800/20 p-4 text-center">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Complete your profile to get recommendations.
+                    </p>
+                    <Link to="/student/profile">
+                      <Button variant="outline" size="sm" className="mt-3">
+                        Update Profile
+                      </Button>
+                    </Link>
+                  </div>
                 )}
-              </ul>
+              </div>
             </Card>
-          </section>
+          </Grid>
+
+          {/* Action Section */}
+          <Card variant="elevated" title="Next Steps" subtitle="What you should do now">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Link to="/student/resume">
+                <Button variant="secondary" className="w-full">
+                  📄 Upload Resume
+                </Button>
+              </Link>
+              <Link to="/student/companies">
+                <Button className="w-full">
+                  🔍 Browse Drives
+                </Button>
+              </Link>
+            </div>
+          </Card>
         </>
       )}
     </section>
