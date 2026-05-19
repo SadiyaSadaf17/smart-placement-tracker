@@ -45,3 +45,22 @@ export const markAllAsRead = asyncHandler(async (req, res) => {
   );
   res.json({ success: true, message: 'All notifications marked as read' });
 });
+
+export const deleteNotification = asyncHandler(async (req, res) => {
+  const notification = await Notification.findOneAndDelete({
+    _id: req.params.id,
+    recipient: req.user._id,
+  });
+
+  if (!notification) {
+    res.status(404);
+    throw new Error('Notification not found');
+  }
+
+  const unreadCount = await Notification.countDocuments({
+    recipient: req.user._id,
+    isRead: false,
+  });
+
+  res.json({ success: true, data: notification, unreadCount });
+});
