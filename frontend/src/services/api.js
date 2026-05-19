@@ -12,12 +12,18 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+export const clearSession = () => {
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('profile');
+};
+
 api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      clearSession();
+      window.dispatchEvent(new Event('auth:logout'));
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }

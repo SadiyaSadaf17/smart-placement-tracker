@@ -1,7 +1,13 @@
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import Student from '../models/Student.js';
 import PlacementDrive from '../models/PlacementDrive.js';
 import Application from '../models/Application.js';
 import asyncHandler from '../utils/asyncHandler.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { checkEligibility } from '../utils/eligibility.js';
 import {
   calculateATSScore,
@@ -60,8 +66,25 @@ export const uploadResume = asyncHandler(async (req, res) => {
   res.json({ success: true, data: student, resume: resumePath });
 });
 
+export const downloadResume = asyncHandler(async (req, res) => {
+  const student = req.student;
+  if (!student?.resume) {
+    res.status(404);
+    throw new Error('No resume uploaded');
+  }
+  const relative = student.resume.replace(/^\//, '');
+  const filePath = path.resolve(__dirname, '..', relative);
+  if (!fs.existsSync(filePath)) {
+    res.status(404);
+    throw new Error('Resume file not found');
+  }
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'inline; filename="resume.pdf"');
+  res.sendFile(filePath);
+});
+
 export const getEligibleDrives = asyncHandler(async (req, res) => {
-  const student = await Student.findOne({ user: req.user._id });
+  const student = req.student;
   const drives = await PlacementDrive.find({
     driveStatus: { $in: ['upcoming', 'active'] },
   }).sort({ interviewDate: 1 });
@@ -83,7 +106,7 @@ export const getEligibleDrives = asyncHandler(async (req, res) => {
 });
 
 export const getStudentAnalytics = asyncHandler(async (req, res) => {
-  const student = await Student.findOne({ user: req.user._id });
+  const student = req.student;
   const applications = await Application.find({ student: student._id })
     .populate('drive', 'companyName role package');
 
@@ -102,7 +125,7 @@ export const getStudentAnalytics = asyncHandler(async (req, res) => {
 });
 
 export const getAIInsights = asyncHandler(async (req, res) => {
-  const student = await Student.findOne({ user: req.user._id });
+  const student = req.student;
   const drives = await PlacementDrive.find({ driveStatus: { $in: ['upcoming', 'active'] } });
 
   const driveId = req.query.driveId;

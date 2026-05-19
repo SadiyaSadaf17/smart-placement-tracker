@@ -89,7 +89,16 @@ export const getStudents = asyncHandler(async (req, res) => {
 });
 
 export const updateStudent = asyncHandler(async (req, res) => {
-  const student = await Student.findByIdAndUpdate(req.params.id, req.body, {
+  const allowed = [
+    'fullName', 'phone', 'branch', 'cgpa', 'skills', 'backlogs',
+    'placementStatus', 'placedCompany', 'placedPackage',
+  ];
+  const updates = {};
+  allowed.forEach((k) => {
+    if (req.body[k] !== undefined) updates[k] = req.body[k];
+  });
+
+  const student = await Student.findByIdAndUpdate(req.params.id, updates, {
     new: true,
     runValidators: true,
   }).populate('user', 'email');

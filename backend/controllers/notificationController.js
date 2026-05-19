@@ -31,6 +31,10 @@ export const markAsRead = asyncHandler(async (req, res) => {
     { isRead: true },
     { new: true }
   );
+  if (!notification) {
+    res.status(404);
+    throw new Error('Notification not found');
+  }
   res.json({ success: true, data: notification });
 });
 

@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import api from '../../services/api';
+import api, { clearSession } from '../../services/api';
 
 export const loginUser = createAsyncThunk(
   'auth/login',
@@ -34,6 +34,7 @@ export const registerUser = createAsyncThunk(
 export const fetchMe = createAsyncThunk('auth/me', async (_, { rejectWithValue }) => {
   try {
     const { data } = await api.get('/auth/me');
+    localStorage.setItem('user', JSON.stringify(data.user));
     localStorage.setItem('profile', JSON.stringify(data.profile));
     return data;
   } catch (err) {
@@ -62,6 +63,7 @@ const authSlice = createSlice({
     profile: stored.profile,
     token: stored.token,
     loading: false,
+    bootstrapped: !stored.token,
     error: null,
   },
   reducers: {
@@ -69,7 +71,9 @@ const authSlice = createSlice({
       state.user = null;
       state.profile = null;
       state.token = null;
-      localStorage.clear();
+      state.error = null;
+      state.bootstrapped = true;
+      clearSession();
     },
     clearError: (state) => {
       state.error = null;
@@ -80,6 +84,7 @@ const authSlice = createSlice({
       .addCase(loginUser.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
+        state.bootstrapped = true;
         state.user = action.payload.user;
         state.profile = action.payload.profile;
         state.token = action.payload.token;
@@ -91,6 +96,7 @@ const authSlice = createSlice({
       .addCase(registerUser.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.loading = false;
+        state.bootstrapped = true;
         state.user = action.payload.user;
         state.profile = action.payload.profile;
         state.token = action.payload.token;
@@ -99,9 +105,22 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      .addCase(fetchMe.pending, (state) => {
+        state.loading = true;
+      })
       .addCase(fetchMe.fulfilled, (state, action) => {
+        state.loading = false;
+        state.bootstrapped = true;
         state.user = action.payload.user;
         state.profile = action.payload.profile;
+      })
+      .addCase(fetchMe.rejected, (state) => {
+        state.loading = false;
+        state.bootstrapped = true;
+        state.user = null;
+        state.profile = null;
+        state.token = null;
+        clearSession();
       });
   },
 });

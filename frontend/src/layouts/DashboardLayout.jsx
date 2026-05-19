@@ -8,17 +8,21 @@ import { useSocket } from '../hooks/useSocket';
 const PAGE_TITLES = {
   '/admin/dashboard': 'Dashboard',
   '/admin/students': 'Students',
+  '/admin/applications': 'Applications',
   '/admin/companies': 'Companies',
   '/admin/drives': 'Placement Drives',
   '/admin/analytics': 'Analytics',
   '/admin/reports': 'Reports',
-  '/admin/notifications': 'Notifications',
+  '/admin/notifications': 'Inbox',
+  '/admin/broadcast': 'Broadcast',
+  '/admin/settings': 'Settings',
   '/student/dashboard': 'Dashboard',
   '/student/profile': 'Profile',
   '/student/companies': 'Companies',
   '/student/applications': 'Applications',
-  '/student/resume': 'Resume',
+  '/student/resume': 'Resume & AI',
   '/student/notifications': 'Notifications',
+  '/student/settings': 'Settings',
 };
 
 export default function DashboardLayout({ title: layoutTitle }) {

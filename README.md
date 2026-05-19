@@ -111,6 +111,44 @@ Use [MongoDB Atlas](https://www.mongodb.com/atlas) and set `MONGODB_URI` on Rend
 - CI/CD with GitHub Actions
 - Unit & E2E tests (Jest, Cypress)
 
+## Docker
+
+```bash
+# Set JWT_SECRET in .env or environment
+docker compose up --build
+```
+
+- Frontend: http://localhost:5173  
+- API: http://localhost:5000/api  
+- MongoDB: localhost:27017  
+
+## Architecture
+
+```
+Browser → React (Redux) → REST API (Express) → MongoDB
+                ↓
+           Socket.IO (notifications, drives, applications)
+```
+
+- **Redux:** `auth` (session), `theme` (dark/light), `notifications` (inbox + socket)
+- **Protected routes:** `ProtectedRoute` → `DashboardLayout` → page via `<Outlet />`
+- **Resume files:** served only via `GET /api/students/resume/file` (not public `/uploads`)
+
+## API Documentation
+
+See [docs/API.md](docs/API.md).
+
+## Recent Improvements (v1.1)
+
+- Fixed admin **Applications**, **Companies**, **Drives** routing and blank pages
+- JWT error handling (401 for expired/invalid tokens)
+- Auth bootstrap + loading gate on protected routes
+- Secure resume download; removed public upload static serving
+- Shared `PageState` (loading/error/empty) across dashboards
+- Admin inbox vs broadcast routes split
+- Settings page, 404 page, Docker Compose
+- Enhanced Resume AI analyzer UI
+
 ## License
 
 MIT

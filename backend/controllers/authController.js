@@ -59,6 +59,11 @@ export const login = asyncHandler(async (req, res) => {
     throw new Error('Invalid email or password');
   }
 
+  if (!user.isActive) {
+    res.status(403);
+    throw new Error('Account has been deactivated. Contact placement cell.');
+  }
+
   let profile = null;
   if (user.role === 'student') {
     profile = await Student.findOne({ user: user._id });
@@ -86,7 +91,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   if (!user) {
     return res.json({
       success: true,
-      message: 'If email exists, reset link has been sent',
+      message: 'If your email is registered, you will receive a reset link shortly.',
     });
   }
 
@@ -96,7 +101,10 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
   await sendPasswordResetEmail(user.email, resetUrl);
 
-  res.json({ success: true, message: 'Reset link sent to email' });
+  res.json({
+    success: true,
+    message: 'If your email is registered, you will receive a reset link shortly.',
+  });
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {

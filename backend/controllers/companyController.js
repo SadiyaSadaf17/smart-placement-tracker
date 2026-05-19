@@ -19,13 +19,22 @@ export const getCompanies = asyncHandler(async (req, res) => {
   });
 });
 
+const pickCompanyFields = (body) => {
+  const allowed = ['name', 'website', 'industry', 'location', 'description', 'logo'];
+  const data = {};
+  allowed.forEach((k) => {
+    if (body[k] !== undefined) data[k] = body[k];
+  });
+  return data;
+};
+
 export const createCompany = asyncHandler(async (req, res) => {
-  const company = await Company.create(req.body);
+  const company = await Company.create(pickCompanyFields(req.body));
   res.status(201).json({ success: true, data: company });
 });
 
 export const updateCompany = asyncHandler(async (req, res) => {
-  const company = await Company.findByIdAndUpdate(req.params.id, req.body, {
+  const company = await Company.findByIdAndUpdate(req.params.id, pickCompanyFields(req.body), {
     new: true,
     runValidators: true,
   });

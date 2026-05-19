@@ -21,6 +21,7 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import activityRoutes from './routes/activityRoutes.js';
 
 dotenv.config();
 
@@ -53,7 +54,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// Resumes are served via authenticated GET /api/students/resume/file (not public static)
 
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Placement Tracker API is running' });
@@ -68,6 +69,11 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/activity', activityRoutes);
+
+if (!process.env.JWT_SECRET) {
+  console.warn('Warning: JWT_SECRET is not set');
+}
 
 app.use(notFound);
 app.use(errorHandler);

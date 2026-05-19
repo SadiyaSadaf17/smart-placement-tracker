@@ -3,21 +3,23 @@ import {
   getProfile,
   updateProfile,
   uploadResume,
+  downloadResume,
   getEligibleDrives,
   getStudentAnalytics,
   getAIInsights,
   getLeaderboard,
 } from '../controllers/studentController.js';
-import { protect, authorize } from '../middleware/authMiddleware.js';
+import { protect, authorize, requireStudent } from '../middleware/authMiddleware.js';
 import { uploadResume as uploadMiddleware } from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
 
-router.use(protect, authorize('student'));
+router.use(protect, authorize('student'), requireStudent);
 
 router.get('/profile', getProfile);
 router.put('/profile', updateProfile);
 router.post('/resume', uploadMiddleware.single('resume'), uploadResume);
+router.get('/resume/file', downloadResume);
 router.get('/drives', getEligibleDrives);
 router.get('/analytics', getStudentAnalytics);
 router.get('/ai-insights', getAIInsights);

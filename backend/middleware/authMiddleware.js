@@ -16,7 +16,16 @@ export const protect = asyncHandler(async (req, res, next) => {
     throw new Error('Not authorized, no token');
   }
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  let decoded;
+  try {
+    decoded = jwt.verify(token, process.env.JWT_SECRET);
+  } catch (err) {
+    res.status(401);
+    if (err.name === 'TokenExpiredError') throw new Error('Token expired, please login again');
+    if (err.name === 'JsonWebTokenError') throw new Error('Invalid token');
+    throw new Error('Not authorized');
+  }
+
   const user = await User.findById(decoded.id).select('-password');
 
   if (!user || !user.isActive) {
@@ -32,6 +41,14 @@ export const protect = asyncHandler(async (req, res, next) => {
     req.admin = await Admin.findOne({ user: user._id });
   }
 
+  next();
+});
+
+export const requireStudent = asyncHandler(async (req, res, next) => {
+  if (!req.student) {
+    res.status(404);
+    throw new Error('Student profile not found. Complete registration.');
+  }
   next();
 });
 
