@@ -75,6 +75,12 @@ const authSlice = createSlice({
       state.bootstrapped = true;
       clearSession();
     },
+    updateProfileImage: (state, action) => {
+      if (state.user) {
+        state.user.profileImage = action.payload;
+        localStorage.setItem('user', JSON.stringify(state.user));
+      }
+    },
     clearError: (state) => {
       state.error = null;
     },
@@ -125,5 +131,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError } = authSlice.actions;
+export const { logout, clearError, updateProfileImage } = authSlice.actions;
 export default authSlice.reducer;

@@ -52,6 +52,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
+// Serve profile avatars statically
+app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads', 'avatars')));
+
 // Resumes are served via authenticated GET /api/students/resume/file (not public static)
 
 app.get('/api/health', (req, res) => {

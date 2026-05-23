@@ -6,9 +6,12 @@ import {
   forgotPassword,
   resetPassword,
   logout,
+  changePassword,
+  uploadProfileImage,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
+import { uploadAvatar } from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -35,5 +38,17 @@ router.post('/forgot-password', forgotPassword);
 router.put('/reset-password/:token', resetPassword);
 router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
+
+router.put(
+  '/change-password',
+  protect,
+  validate({
+    currentPassword: { required: true },
+    newPassword: { required: true, minLength: 6 },
+  }),
+  changePassword
+);
+
+router.put('/profile-image', protect, uploadAvatar.single('avatar'), uploadProfileImage);
 
 export default router;

@@ -15,6 +15,7 @@ const sendAuthResponse = (res, user, profile) => {
       _id: user._id,
       email: user.email,
       role: user.role,
+      profileImage: user.profileImage || null,
     },
     profile,
   });
@@ -83,7 +84,16 @@ export const getMe = asyncHandler(async (req, res) => {
     profile = await Admin.findOne({ user: req.user._id }).populate('user', 'email role');
   }
 
-  res.json({ success: true, user: req.user, profile });
+  res.json({
+    success: true,
+    user: {
+      _id: req.user._id,
+      email: req.user.email,
+      role: req.user.role,
+      profileImage: req.user.profileImage || null,
+    },
+    profile,
+  });
 });
 
 export const forgotPassword = asyncHandler(async (req, res) => {
@@ -131,4 +141,51 @@ export const resetPassword = asyncHandler(async (req, res) => {
 export const logout = asyncHandler(async (req, res) => {
   await logActivity({ user: req.user._id, action: 'LOGOUT', ip: req.ip });
   res.json({ success: true, message: 'Logged out successfully' });
+});
+
+/* -------------------- CHANGE PASSWORD -------------------- */
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user || !(await user.matchPassword(currentPassword))) {
+    res.status(400);
+    throw new Error('Incorrect current password');
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res.json({ success: true, message: 'Password changed successfully' });
+});
+
+/* -------------------- UPLOAD PROFILE IMAGE -------------------- */
+export const uploadProfileImage = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    res.status(400);
+    throw new Error('Please upload an image file');
+  }
+
+  const avatarPath = `/uploads/avatars/${req.file.filename}`;
+  const user = await User.findById(req.user._id);
+  user.profileImage = avatarPath;
+  await user.save();
+
+  let profile = null;
+  if (user.role === 'student') {
+    profile = await Student.findOne({ user: user._id });
+  } else {
+    profile = await Admin.findOne({ user: user._id });
+  }
+
+  res.json({
+    success: true,
+    user: {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+      profileImage: user.profileImage,
+    },
+    profile,
+  });
 });
