@@ -13,6 +13,18 @@ export const fetchNotifications = createAsyncThunk(
   }
 );
 
+export const deleteNotification = createAsyncThunk(
+  'notifications/delete',
+  async (id, { rejectWithValue }) => {
+    try {
+      const { data } = await api.delete(`/notifications/${id}`);
+      return { id, responseData: data };
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Failed to delete notification');
+    }
+  }
+);
+
 const notificationSlice = createSlice({
   name: 'notifications',
   initialState: {
@@ -49,6 +61,11 @@ const notificationSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
         state.items = [];
+      })
+      .addCase(deleteNotification.fulfilled, (state, action) => {
+        const { id, responseData } = action.payload;
+        state.items = state.items.filter((i) => i._id !== id);
+        state.unreadCount = responseData.unreadCount !== undefined ? responseData.unreadCount : state.unreadCount;
       });
   },
 });

@@ -1,4 +1,4 @@
-import dotenv from 'dotenv';
+import 'dotenv/config';
 import mongoose from 'mongoose';
 import User from '../models/User.js';
 import Student from '../models/Student.js';
@@ -8,8 +8,6 @@ import PlacementDrive from '../models/PlacementDrive.js';
 import Application from '../models/Application.js';
 import Notification from '../models/Notification.js';
 import { calculateATSScore } from './aiHelpers.js';
-
-dotenv.config();
 
 const seed = async () => {
   try {

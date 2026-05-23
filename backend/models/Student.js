@@ -40,6 +40,28 @@ const studentSchema = new mongoose.Schema(
     certifications: [certificationSchema],
     projects: [projectSchema],
     atsScore: { type: Number, min: 0, max: 100 },
+    aiAnalysis: {
+      skillMatchPercentage: { type: Number, default: 0 },
+      jobReadinessLevel: { type: String, enum: ['Beginner', 'Intermediate', 'Advanced', 'N/A'], default: 'N/A' },
+      evaluationFactors: {
+        skillsRelevance: String,
+        projectQuality: String,
+        experienceLevel: String,
+        educationRelevance: String,
+        formattingAndStructureQuality: String,
+      },
+      improvementSuggestions: [String],
+      jobRoleCompatibility: [
+        {
+          role: String,
+          score: Number,
+        }
+      ],
+      extractedSkills: {
+        technical: [String],
+        soft: [String],
+      }
+    },
     placementStatus: {
       type: String,
       enum: ['unplaced', 'placed', 'intern'],
@@ -52,7 +74,6 @@ const studentSchema = new mongoose.Schema(
 );
 
 studentSchema.index({ branch: 1, cgpa: -1 });
-studentSchema.index({ rollNumber: 1 });
 studentSchema.index({ placementStatus: 1 });
 
 const Student = mongoose.model('Student', studentSchema);
