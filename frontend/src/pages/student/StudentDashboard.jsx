@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { FileText, Building2, TrendingUp, Award, ArrowRight } from 'lucide-react';
+import { FileText, Building2, Gauge, Award, ArrowRight } from 'lucide-react';
 import api from '../../services/api';
 import StatCard from '../../components/ui/StatCard';
 import Card from '../../components/ui/Card';
@@ -9,15 +9,18 @@ import Button from '../../components/ui/Button';
 import { useFetch } from '../../hooks/useFetch';
 import { LoadingGrid, ErrorState } from '../../components/ui/PageState';
 import { Grid } from '../../components/ui/Divider';
+import ReadinessScoreRing from '../../components/readiness/ReadinessScoreRing';
 
 export default function StudentDashboard() {
   const analytics = useFetch(() => api.get('/students/analytics').then((r) => r.data), []);
   const ai = useFetch(() => api.get('/students/ai-insights').then((r) => r.data.data), []);
+  const readiness = useFetch(() => api.get('/readiness-score/current').then((r) => r.data.data), []);
 
-  const loading = analytics.loading || ai.loading;
-  const error = analytics.error || ai.error;
+  const loading = analytics.loading || ai.loading || readiness.loading;
+  const error = analytics.error || ai.error || readiness.error;
   const stats = analytics.data?.data;
   const insights = ai.data;
+  const readinessScore = readiness.data;
 
   return (
     <section className="animate-fade-in space-y-8">
@@ -32,6 +35,7 @@ export default function StudentDashboard() {
           onRetry={() => {
             analytics.refetch();
             ai.refetch();
+            readiness.refetch();
           }}
         />
       )}
@@ -64,16 +68,37 @@ export default function StudentDashboard() {
               subtitle="Offers received"
             />
             <StatCard
-              title="ATS Score"
-              value={`${stats?.atsScore ?? insights?.atsScore ?? 0}%`}
-              icon={TrendingUp}
+              title="Readiness"
+              value={`${Math.round(readinessScore?.score ?? 0)}%`}
+              icon={Gauge}
               color="orange"
-              subtitle="Resume score"
+              subtitle={readinessScore?.grade || 'Placement score'}
             />
           </Grid>
 
           {/* Main Cards */}
           <Grid columns={2} gap={6}>
+            <Card
+              title="Placement Readiness"
+              subtitle="Weighted score across your placement signals"
+              action={
+                <Link to="/student/readiness" className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300">
+                  Details
+                </Link>
+              }
+            >
+              <div className="grid items-center gap-5 sm:grid-cols-[auto_1fr]">
+                <ReadinessScoreRing score={readinessScore?.score} grade={readinessScore?.grade} size={150} />
+                <div className="space-y-3">
+                  {(readinessScore?.insights || []).slice(0, 2).map((insight) => (
+                    <p key={insight} className="rounded-xl bg-slate-50 p-3 text-sm text-slate-600 dark:bg-slate-800/40 dark:text-slate-300">
+                      {insight}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            </Card>
+
             {/* Placement Prediction */}
             <Card variant="gradient" title="Placement Prediction" subtitle="AI-powered probability model">
               <div className="space-y-4">

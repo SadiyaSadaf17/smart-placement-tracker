@@ -13,6 +13,7 @@ import StudentProfile from '../pages/student/StudentProfile';
 import StudentCompanies from '../pages/student/StudentCompanies';
 import StudentApplications from '../pages/student/StudentApplications';
 import StudentResume from '../pages/student/StudentResume';
+import StudentReadiness from '../pages/student/StudentReadiness';
 import NotificationsPage from '../pages/shared/NotificationsPage';
 import SettingsPage from '../pages/shared/SettingsPage';
 import AdminDashboard from '../pages/admin/AdminDashboard';
@@ -43,6 +44,7 @@ export default function AppRoutes() {
           <Route path="companies" element={<StudentCompanies />} />
           <Route path="applications" element={<StudentApplications />} />
           <Route path="resume" element={<StudentResume />} />
+          <Route path="readiness" element={<StudentReadiness />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

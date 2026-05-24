@@ -22,6 +22,7 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import companyRoutes from './routes/companyRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
+import readinessScoreRoutes from './routes/readinessScoreRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,6 +72,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/companies', companyRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/activity', activityRoutes);
+app.use('/api/readiness-score', readinessScoreRoutes);
 
 if (!process.env.JWT_SECRET) {
   console.warn('Warning: JWT_SECRET is not set');

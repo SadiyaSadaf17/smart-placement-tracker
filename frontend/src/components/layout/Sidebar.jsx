@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { X } from 'lucide-react';
 import {
   LayoutDashboard, User, Building2, FileText, Bell, FileUp,
-  Users, BarChart3, Download, Briefcase, ClipboardList, Settings, Megaphone,
+  Users, BarChart3, Download, Briefcase, ClipboardList, Settings, Megaphone, Gauge,
 } from 'lucide-react';
 
 const studentLinks = [
@@ -12,6 +12,7 @@ const studentLinks = [
   { to: '/student/companies', label: 'Companies', icon: Building2 },
   { to: '/student/applications', label: 'Applications', icon: FileText },
   { to: '/student/resume', label: 'Resume & AI', icon: FileUp },
+  { to: '/student/readiness', label: 'Readiness', icon: Gauge },
   { to: '/student/notifications', label: 'Notifications', icon: Bell },
   { to: '/student/settings', label: 'Settings', icon: Settings },
 ];

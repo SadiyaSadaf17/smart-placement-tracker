@@ -7,6 +7,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { checkEligibility } from '../utils/eligibility.js';
 import { createNotification } from '../services/notificationService.js';
 import { emitToAdmin, emitToUser } from '../config/socket.js';
+import { recalculateReadinessScore } from '../services/readinessScoreService.js';
 
 const parseBoolean = (value) => {
   if (typeof value === 'boolean') return value;
@@ -116,6 +117,7 @@ export const applyForDrive = asyncHandler(async (req, res) => {
   });
 
   emitToAdmin('new-application', { application, drive, student });
+  await recalculateReadinessScore(student);
 
   const populated = await Application.findById(application._id)
     .populate('drive', 'companyName role package location')
@@ -244,15 +246,18 @@ export const updateApplicationRound = asyncHandler(async (req, res) => {
   });
 
   if (currentRound === 'Selected') {
-    await Student.findByIdAndUpdate(application.student._id, {
+    const updatedStudent = await Student.findByIdAndUpdate(application.student._id, {
       placementStatus: 'placed',
       placedCompany: application.drive.companyName,
       placedPackage: application.drive.package,
-    });
+    }, { new: true });
+    await recalculateReadinessScore(updatedStudent);
     emitToUser(studentUser._id.toString(), 'selection', {
       company: application.drive.companyName,
       package: application.drive.package,
     });
+  } else {
+    await recalculateReadinessScore(application.student);
   }
 
   emitToUser(studentUser._id.toString(), 'application-update', {
