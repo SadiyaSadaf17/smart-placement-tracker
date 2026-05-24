@@ -7,6 +7,13 @@ import { checkEligibility } from '../utils/eligibility.js';
 import { createNotification, notifyMany } from '../services/notificationService.js';
 import { emitToAdmin } from '../config/socket.js';
 import { logAudit } from '../services/auditService.js';
+import {
+  buildEligibilityWorkbook,
+  evaluateDriveEligibility,
+  getFilteredEligibilityRows,
+  notifyEligibleStudents,
+} from '../services/eligibilityService.js';
+import { transitionDriveStage } from '../services/driveWorkflowService.js';
 
 export const createDrive = asyncHandler(async (req, res) => {
   const drive = await PlacementDrive.create({
@@ -134,8 +141,8 @@ export const getEligibleStudents = asyncHandler(async (req, res) => {
     throw new Error('Drive not found');
   }
 
-  const evaluated = await evaluateStudentsForDrive(drive);
-  const eligible = evaluated.filter((e) => e.eligibility.eligible);
+  const snapshot = await evaluateDriveEligibility(drive);
+  const eligible = snapshot.students.filter((row) => row.eligible);
 
   res.json({ success: true, data: eligible, count: eligible.length });
 });
@@ -150,18 +157,70 @@ export const previewDriveEligibility = asyncHandler(async (req, res) => {
     throw new Error('Drive not found');
   }
 
-  const evaluated = await evaluateStudentsForDrive(drive);
-  const eligible = evaluated.filter((row) => row.eligibility.eligible);
-  const ineligible = evaluated.filter((row) => !row.eligibility.eligible);
+  const snapshot = await evaluateDriveEligibility(drive, { force: req.query.force === 'true' });
+  const rows = getFilteredEligibilityRows(snapshot, req.query);
+  const eligible = rows.filter((row) => row.eligible);
+  const ineligible = rows.filter((row) => !row.eligible);
 
   res.json({
     success: true,
     data: {
-      eligibleCount: eligible.length,
-      ineligibleCount: ineligible.length,
-      total: evaluated.length,
+      eligibleCount: snapshot.eligibleCount,
+      ineligibleCount: snapshot.ineligibleCount,
+      total: snapshot.eligibleCount + snapshot.ineligibleCount,
+      departmentStats: snapshot.departmentStats,
+      calculatedAt: snapshot.calculatedAt,
       eligible,
       ineligible,
     },
   });
+});
+
+export const recalculateDriveEligibility = asyncHandler(async (req, res) => {
+  const snapshot = await evaluateDriveEligibility(req.params.id, { force: true });
+  res.json({ success: true, data: snapshot });
+});
+
+export const notifyDriveEligibleStudents = asyncHandler(async (req, res) => {
+  const result = await notifyEligibleStudents(req.params.id);
+  await logAudit({
+    actor: req.user,
+    actionType: 'DRIVE_ELIGIBLE_STUDENTS_NOTIFIED',
+    targetEntity: 'PlacementDrive',
+    targetId: req.params.id,
+    newValues: result,
+    ipAddress: req.ip,
+  });
+  res.json({ success: true, data: result });
+});
+
+export const downloadDriveEligibilityReport = asyncHandler(async (req, res) => {
+  const snapshot = await evaluateDriveEligibility(req.params.id);
+  const rows = getFilteredEligibilityRows(snapshot, req.query);
+  const buffer = buildEligibilityWorkbook(rows);
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition', `attachment; filename=drive-eligibility-${req.params.id}.xlsx`);
+  res.send(buffer);
+});
+
+export const transitionDriveWorkflowStage = asyncHandler(async (req, res) => {
+  const oldDrive = await PlacementDrive.findById(req.params.id).lean();
+  const drive = await transitionDriveStage({
+    driveId: req.params.id,
+    nextStage: req.body.nextStage,
+    remarks: req.body.remarks,
+    actor: req.user,
+  });
+
+  await logAudit({
+    actor: req.user,
+    actionType: 'DRIVE_STAGE_TRANSITIONED',
+    targetEntity: 'PlacementDrive',
+    targetId: drive._id,
+    oldValues: { workflowStage: oldDrive?.workflowStage },
+    newValues: { workflowStage: drive.workflowStage },
+    ipAddress: req.ip,
+  });
+
+  res.json({ success: true, data: drive });
 });

@@ -7,6 +7,7 @@ import mongoSanitize from 'express-mongo-sanitize';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import http from 'http';
+import zlib from 'zlib';
 
 import connectDB from './config/db.js';
 import { setupSocket } from './config/socket.js';
@@ -25,6 +26,9 @@ import activityRoutes from './routes/activityRoutes.js';
 import readinessScoreRoutes from './routes/readinessScoreRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
 import offerRoutes from './routes/offerRoutes.js';
+import scheduleRoutes from './routes/scheduleRoutes.js';
+import policyRoutes from './routes/policyRoutes.js';
+import emailRoutes from './routes/emailRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,6 +59,24 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
 
+app.use((req, res, next) => {
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+  if (!/\bgzip\b/.test(acceptEncoding)) return next();
+  const originalJson = res.json.bind(res);
+  res.json = (body) => {
+    const payload = Buffer.from(JSON.stringify(body));
+    if (payload.length < 1024) return originalJson(body);
+    zlib.gzip(payload, (err, compressed) => {
+      if (err) return originalJson(body);
+      res.setHeader('Content-Encoding', 'gzip');
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.send(compressed);
+    });
+    return res;
+  };
+  next();
+});
+
 // Serve profile avatars statically
 app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads', 'avatars')));
 app.use('/uploads/offers', express.static(path.join(__dirname, 'uploads', 'offers')));
@@ -78,6 +100,9 @@ app.use('/api/activity', activityRoutes);
 app.use('/api/readiness-score', readinessScoreRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/offers', offerRoutes);
+app.use('/api/schedules', scheduleRoutes);
+app.use('/api/policies/placement', policyRoutes);
+app.use('/api/email', emailRoutes);
 
 if (!process.env.JWT_SECRET) {
   console.warn('Warning: JWT_SECRET is not set');

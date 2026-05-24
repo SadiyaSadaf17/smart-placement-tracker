@@ -6,6 +6,9 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { notifyMany } from '../services/notificationService.js';
 import { sendPasswordResetEmail } from '../services/emailService.js';
 import { logAudit } from '../services/auditService.js';
+import Offer from '../models/Offer.js';
+import ReadinessScore from '../models/ReadinessScore.js';
+import AuditLog from '../models/AuditLog.js';
 
 export const getDashboardStats = asyncHandler(async (req, res) => {
   const totalStudents = await Student.countDocuments();
@@ -204,4 +207,38 @@ export const sendBulkNotification = asyncHandler(async (req, res) => {
   );
 
   res.json({ success: true, message: `Notification sent to ${users.length} students` });
+});
+
+export const getStudentProfileDetail = asyncHandler(async (req, res) => {
+  const student = await Student.findById(req.params.id).populate('user', 'email isActive profileImage');
+  if (!student) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  const [applications, offers, readiness, auditLogs] = await Promise.all([
+    Application.find({ student: student._id }).populate('drive', 'companyName role package location').sort({ createdAt: -1 }),
+    Offer.find({ studentId: student._id }).populate('driveId', 'companyName role package location').sort({ createdAt: -1 }),
+    ReadinessScore.findOne({ student: student._id }),
+    AuditLog.find({ targetEntity: 'Student', targetId: student._id }).sort({ timestamp: -1 }).limit(20),
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      student,
+      applications,
+      offers,
+      readiness,
+      auditLogs,
+      analytics: {
+        totalApplications: applications.length,
+        selected: applications.filter((application) => application.currentRound === 'Selected').length,
+        rejected: applications.filter((application) => application.currentRound === 'Rejected').length,
+        successRate: applications.length
+          ? Math.round((applications.filter((application) => application.currentRound === 'Selected').length / applications.length) * 100)
+          : 0,
+      },
+    },
+  });
 });

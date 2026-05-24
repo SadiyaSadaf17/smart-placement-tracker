@@ -181,6 +181,50 @@ export const getMyApplications = asyncHandler(async (req, res) => {
   res.json({ success: true, data: applications });
 });
 
+export const getMyApplicationTimeline = asyncHandler(async (req, res) => {
+  const student = req.student || (await Student.findOne({ user: req.user._id }));
+  if (!student) {
+    res.status(404);
+    throw new Error('Student profile not found');
+  }
+
+  const applications = await Application.find({ student: student._id })
+    .populate('drive', 'companyName role package location')
+    .sort({ createdAt: -1 });
+
+  const events = applications.flatMap((application) => [
+    {
+      type: 'application_submitted',
+      title: `Applied to ${application.drive?.companyName}`,
+      date: application.appliedAt,
+      applicationId: application._id,
+      drive: application.drive,
+    },
+    ...(application.roundHistory || []).map((round) => ({
+      type: 'round_update',
+      title: `${application.drive?.companyName}: ${round.round}`,
+      status: round.status,
+      remarks: round.remarks,
+      date: round.updatedAt,
+      applicationId: application._id,
+      drive: application.drive,
+    })),
+  ]);
+
+  res.json({
+    success: true,
+    data: {
+      applications,
+      events: events.sort((a, b) => new Date(b.date) - new Date(a.date)),
+      analytics: {
+        totalApplications: applications.length,
+        selected: applications.filter((app) => app.currentRound === 'Selected').length,
+        rejected: applications.filter((app) => app.currentRound === 'Rejected').length,
+      },
+    },
+  });
+});
+
 export const getDriveApplications = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10, round, search } = req.query;
   const query = { drive: req.params.driveId };

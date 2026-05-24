@@ -6,6 +6,7 @@ import {
   deactivateStudent,
   resendStudentPasswordReset,
   sendBulkNotification,
+  getStudentProfileDetail,
 } from '../controllers/adminController.js';
 import {
   commitStudentBulkUploadBatch,
@@ -22,6 +23,7 @@ router.use(protect, authorize('admin'));
 
 router.get('/dashboard', getDashboardStats);
 router.get('/students', getStudents);
+router.get('/students/:id/detail', getStudentProfileDetail);
 router.post('/students/bulk/preview', uploadStudentBulkFile.single('file'), previewStudentBulkUpload);
 router.get('/students/bulk/:batchId', getStudentBulkUploadBatch);
 router.post('/students/bulk/:batchId/commit', commitStudentBulkUploadBatch);

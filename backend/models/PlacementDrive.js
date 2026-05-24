@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { DRIVE_STAGES } from '../config/driveWorkflow.js';
 
 const placementDriveSchema = new mongoose.Schema(
   {
@@ -38,6 +39,32 @@ const placementDriveSchema = new mongoose.Schema(
       type: String,
       enum: ['upcoming', 'active', 'closed', 'cancelled'],
       default: 'upcoming',
+    },
+    workflowStage: {
+      type: String,
+      enum: Object.values(DRIVE_STAGES),
+      default: DRIVE_STAGES.DRAFT,
+      index: true,
+    },
+    stageHistory: [
+      {
+        from: String,
+        to: String,
+        changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        changedAt: { type: Date, default: Date.now },
+        remarks: String,
+      },
+    ],
+    stageTimestamps: {
+      draft: Date,
+      published: Date,
+      applications_open: Date,
+      applications_closed: Date,
+      test_scheduled: Date,
+      interview_scheduled: Date,
+      results_published: Date,
+      completed: Date,
+      cancelled: Date,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

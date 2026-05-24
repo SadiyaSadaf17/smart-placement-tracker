@@ -28,6 +28,12 @@ import AdminReports from '../pages/admin/AdminReports';
 import AdminNotifications from '../pages/admin/AdminNotifications';
 import AdminOffers from '../pages/admin/AdminOffers';
 import AdminAuditLogs from '../pages/admin/AdminAuditLogs';
+import AdminEligibility from '../pages/admin/AdminEligibility';
+import AdminScheduler from '../pages/admin/AdminScheduler';
+import AdminStudentDetail from '../pages/admin/AdminStudentDetail';
+import AdminPolicies from '../pages/admin/AdminPolicies';
+import StudentApplicationHistory from '../pages/student/StudentApplicationHistory';
+import StudentSchedule from '../pages/student/StudentSchedule';
 
 export default function AppRoutes() {
   return (
@@ -48,6 +54,8 @@ export default function AppRoutes() {
           <Route path="profile" element={<StudentProfile />} />
           <Route path="companies" element={<StudentCompanies />} />
           <Route path="applications" element={<StudentApplications />} />
+          <Route path="history" element={<StudentApplicationHistory />} />
+          <Route path="schedule" element={<StudentSchedule />} />
           <Route path="resume" element={<StudentResume />} />
           <Route path="readiness" element={<StudentReadiness />} />
           <Route path="offers" element={<StudentOffers />} />
@@ -61,13 +69,17 @@ export default function AppRoutes() {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="students" element={<AdminStudents />} />
+          <Route path="students/:id" element={<AdminStudentDetail />} />
           <Route path="applications" element={<AdminApplications />} />
+          <Route path="eligibility" element={<AdminEligibility />} />
+          <Route path="scheduler" element={<AdminScheduler />} />
           <Route path="offers" element={<AdminOffers />} />
           <Route path="companies" element={<AdminCompanies />} />
           <Route path="drives" element={<AdminDrives />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="reports" element={<AdminReports />} />
           <Route path="audit" element={<AdminAuditLogs />} />
+          <Route path="policies" element={<AdminPolicies />} />
           <Route path="notifications" element={<NotificationsPage />} />
           <Route path="broadcast" element={<AdminNotifications />} />
           <Route path="settings" element={<SettingsPage />} />

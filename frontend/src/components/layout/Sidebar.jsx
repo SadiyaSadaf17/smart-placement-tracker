@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { X } from 'lucide-react';
 import {
   LayoutDashboard, User, Building2, FileText, Bell, FileUp,
-  Users, BarChart3, Download, Briefcase, ClipboardList, Settings, Megaphone, Gauge, Award, ShieldCheck,
+  Users, BarChart3, Download, Briefcase, ClipboardList, Settings, Megaphone, Gauge, Award, ShieldCheck, CalendarDays, Target,
 } from 'lucide-react';
 
 const studentLinks = [
@@ -11,6 +11,8 @@ const studentLinks = [
   { to: '/student/profile', label: 'Profile', icon: User },
   { to: '/student/companies', label: 'Companies', icon: Building2 },
   { to: '/student/applications', label: 'Applications', icon: FileText },
+  { to: '/student/history', label: 'History', icon: ClipboardList },
+  { to: '/student/schedule', label: 'Schedule', icon: CalendarDays },
   { to: '/student/resume', label: 'Resume & AI', icon: FileUp },
   { to: '/student/readiness', label: 'Readiness', icon: Gauge },
   { to: '/student/offers', label: 'Offers', icon: Award },
@@ -22,12 +24,15 @@ const adminLinks = [
   { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/admin/students', label: 'Students', icon: Users },
   { to: '/admin/applications', label: 'Applications', icon: ClipboardList },
+  { to: '/admin/eligibility', label: 'Eligibility', icon: Target },
+  { to: '/admin/scheduler', label: 'Scheduler', icon: CalendarDays },
   { to: '/admin/offers', label: 'Offers', icon: Award },
   { to: '/admin/companies', label: 'Companies', icon: Briefcase },
   { to: '/admin/drives', label: 'Drives', icon: Building2 },
   { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/admin/reports', label: 'Reports', icon: Download },
   { to: '/admin/audit', label: 'Audit', icon: ShieldCheck },
+  { to: '/admin/policies', label: 'Policies', icon: Settings },
   { to: '/admin/notifications', label: 'Inbox', icon: Bell },
   { to: '/admin/broadcast', label: 'Broadcast', icon: Megaphone },
   { to: '/admin/settings', label: 'Settings', icon: Settings },

@@ -6,6 +6,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import { LoadingGrid, ErrorState, EmptyState } from '../../components/ui/PageState';
 import { BRANCHES } from '../../utils/constants';
 import { Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import BulkStudentUpload from '../../components/admin/BulkStudentUpload';
 import Button from '../../components/ui/Button';
@@ -132,6 +133,9 @@ export default function AdminStudents() {
                     </Badge>
                   </td>
                   <td className="p-3">
+                    <Link to={`/admin/students/${s._id}`} className="mr-2 text-sm font-medium text-blue-600 dark:text-blue-400">
+                      View
+                    </Link>
                     <Button variant="outline" size="sm" onClick={() => resendResetLink(s._id)}>
                       Send reset
                     </Button>

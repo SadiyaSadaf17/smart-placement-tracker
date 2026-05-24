@@ -22,6 +22,17 @@ const emptyDrive = {
   eligibility: { minCgpa: 6, maxBacklogs: 0, allowedBranches: ['CSE', 'IT'] },
 };
 
+const WORKFLOW_STAGES = [
+  'published',
+  'applications_open',
+  'applications_closed',
+  'test_scheduled',
+  'interview_scheduled',
+  'results_published',
+  'completed',
+  'cancelled',
+];
+
 export default function AdminDrives() {
   const [drives, setDrives] = useState([]);
   const [form, setForm] = useState(emptyDrive);
@@ -29,6 +40,7 @@ export default function AdminDrives() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [nextStages, setNextStages] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -86,6 +98,18 @@ export default function AdminDrives() {
       await load();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Delete failed');
+    }
+  };
+
+  const transitionStage = async (driveId) => {
+    const nextStage = nextStages[driveId];
+    if (!nextStage) return toast.error('Select next workflow stage');
+    try {
+      await api.patch(`/drives/${driveId}/workflow`, { nextStage });
+      toast.success('Drive workflow updated');
+      await load();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Workflow update failed');
     }
   };
 
@@ -247,6 +271,7 @@ export default function AdminDrives() {
                 <p className="text-sm text-slate-600 dark:text-slate-400">{d.location}</p>
                 <section className="mt-2 flex flex-wrap gap-2">
                   <Badge>{d.driveStatus}</Badge>
+                  <Badge variant="info">{(d.workflowStage || 'draft').replaceAll('_', ' ')}</Badge>
                   {d.interviewDate && (
                     <Badge variant="info">
                       Interview: {new Date(d.interviewDate).toLocaleDateString()}
@@ -256,9 +281,24 @@ export default function AdminDrives() {
                 {d.description && (
                   <p className="mt-2 line-clamp-2 text-sm text-slate-500">{d.description}</p>
                 )}
-                <Button variant="danger" size="sm" className="mt-4" onClick={() => remove(d._id)}>
-                  Delete
-                </Button>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <select
+                    className="rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
+                    value={nextStages[d._id] || ''}
+                    onChange={(e) => setNextStages((current) => ({ ...current, [d._id]: e.target.value }))}
+                  >
+                    <option value="">Next stage</option>
+                    {WORKFLOW_STAGES.map((stage) => (
+                      <option key={stage} value={stage}>{stage.replaceAll('_', ' ')}</option>
+                    ))}
+                  </select>
+                  <Button variant="secondary" size="sm" onClick={() => transitionStage(d._id)}>
+                    Move
+                  </Button>
+                  <Button variant="danger" size="sm" onClick={() => remove(d._id)}>
+                    Delete
+                  </Button>
+                </div>
               </Card>
             ))}
           </section>

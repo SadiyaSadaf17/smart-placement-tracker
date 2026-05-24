@@ -2,6 +2,7 @@ import express from 'express';
 import {
   applyForDrive,
   getMyApplications,
+  getMyApplicationTimeline,
   getAllApplications,
   getDriveApplications,
   updateApplicationRound,
@@ -15,6 +16,7 @@ router.use(protect);
 
 router.post('/apply/:driveId', authorize('student'), requireStudent, uploadResume.single('resume'), applyForDrive);
 router.get('/my', authorize('student'), getMyApplications);
+router.get('/my/timeline', authorize('student'), requireStudent, getMyApplicationTimeline);
 router.get('/', authorize('admin'), getAllApplications);
 router.get('/drive/:driveId', authorize('admin'), getDriveApplications);
 router.put('/:id/round', authorize('admin'), updateApplicationRound);
