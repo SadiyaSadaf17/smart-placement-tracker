@@ -8,6 +8,8 @@ import { checkEligibility } from '../utils/eligibility.js';
 import { createNotification } from '../services/notificationService.js';
 import { emitToAdmin, emitToUser } from '../config/socket.js';
 import { recalculateReadinessScore } from '../services/readinessScoreService.js';
+import { createOfferFromApplication } from './offerController.js';
+import { logAudit } from '../services/auditService.js';
 
 const parseBoolean = (value) => {
   if (typeof value === 'boolean') return value;
@@ -69,6 +71,12 @@ export const applyForDrive = asyncHandler(async (req, res) => {
     cleanupUploadedFile(req.file);
     res.status(400);
     throw new Error('You are already placed and cannot apply for new drives');
+  }
+
+  if (student.placementBlocked) {
+    cleanupUploadedFile(req.file);
+    res.status(400);
+    throw new Error('Your profile is blocked from future placement applications');
   }
 
   const { eligible, reasons } = checkEligibility(student, drive);
@@ -253,6 +261,7 @@ export const updateApplicationRound = asyncHandler(async (req, res) => {
       placedPackage: application.drive.package,
     }, { new: true });
     await recalculateReadinessScore(updatedStudent);
+    await createOfferFromApplication({ application, actor: req.user, ipAddress: req.ip });
     emitToAdmin('analytics-update', { reason: 'student-selected' });
     emitToUser(studentUser._id.toString(), 'selection', {
       company: application.drive.companyName,
@@ -266,6 +275,15 @@ export const updateApplicationRound = asyncHandler(async (req, res) => {
   emitToUser(studentUser._id.toString(), 'application-update', {
     round: currentRound,
     drive: application.drive.companyName,
+  });
+
+  await logAudit({
+    actor: req.user,
+    actionType: 'APPLICATION_ROUND_UPDATED',
+    targetEntity: 'Application',
+    targetId: application._id,
+    newValues: { currentRound, status, remarks },
+    ipAddress: req.ip,
   });
 
   res.json({ success: true, data: application });

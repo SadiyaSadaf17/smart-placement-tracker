@@ -71,6 +71,7 @@ export default function SettingsPage() {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
       });
+      if (data.user) dispatch(updateAuthUser(data.user));
       setPasswordForm(initialPasswordForm);
       toast.success(data.message || 'Password changed successfully');
     } catch (error) {

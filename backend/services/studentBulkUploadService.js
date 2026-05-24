@@ -11,13 +11,27 @@ const HEADER_ALIASES = Object.freeze({
   email: ['email', 'email address', 'student email'],
   fullName: ['full name', 'fullname', 'name', 'student name'],
   phone: ['phone', 'mobile', 'contact', 'contact number'],
+  personalEmail: ['personal email'],
+  collegeEmail: ['college email', 'official email'],
+  gender: ['gender'],
+  dateOfBirth: ['date of birth', 'dob'],
+  address: ['address'],
   rollNumber: ['roll number', 'roll no', 'roll', 'rollnumber', 'registration number'],
+  batchYear: ['batch year', 'batch'],
+  section: ['section'],
   branch: ['branch', 'department branch'],
   department: ['department', 'dept'],
-  academicYear: ['academic year', 'year', 'current year'],
+  academicYear: ['academic year', 'year'],
+  currentYear: ['current year'],
+  graduationPercentage: ['graduation percentage', 'graduation %', 'degree percentage'],
+  tenthPercentage: ['10th percentage', 'tenth percentage', 'ssc percentage'],
+  twelfthPercentage: ['12th percentage', 'twelfth percentage', 'inter percentage'],
+  diplomaPercentage: ['diploma percentage'],
   cgpa: ['cgpa', 'gpa'],
   skills: ['skills', 'skill set'],
   backlogs: ['backlogs', 'active backlogs'],
+  activeBacklogs: ['active backlogs'],
+  placementConsentStatus: ['placement consent', 'placement consent status'],
 });
 
 const REQUIRED_FIELDS = ['email', 'fullName', 'rollNumber', 'branch', 'cgpa'];
@@ -72,13 +86,27 @@ const normalizeRow = (raw) => ({
   email: cleanString(raw.email).toLowerCase(),
   fullName: cleanString(raw.fullName),
   phone: cleanString(raw.phone),
+  personalEmail: cleanString(raw.personalEmail).toLowerCase(),
+  collegeEmail: cleanString(raw.collegeEmail).toLowerCase(),
+  gender: cleanString(raw.gender).toLowerCase(),
+  dateOfBirth: cleanString(raw.dateOfBirth),
+  address: cleanString(raw.address),
   rollNumber: cleanString(raw.rollNumber).toUpperCase(),
+  batchYear: cleanString(raw.batchYear),
+  section: cleanString(raw.section).toUpperCase(),
   branch: cleanString(raw.branch).toUpperCase(),
   department: cleanString(raw.department),
   academicYear: toNumber(raw.academicYear),
+  currentYear: toNumber(raw.currentYear),
   cgpa: toNumber(raw.cgpa),
+  graduationPercentage: toNumber(raw.graduationPercentage),
+  tenthPercentage: toNumber(raw.tenthPercentage),
+  twelfthPercentage: toNumber(raw.twelfthPercentage),
+  diplomaPercentage: toNumber(raw.diplomaPercentage),
   skills: parseSkills(raw.skills),
-  backlogs: toNumber(raw.backlogs) ?? 0,
+  backlogs: toNumber(raw.backlogs) ?? toNumber(raw.activeBacklogs) ?? 0,
+  activeBacklogs: toNumber(raw.activeBacklogs) ?? toNumber(raw.backlogs) ?? 0,
+  placementConsentStatus: cleanString(raw.placementConsentStatus) || 'pending',
 });
 
 const requiredErrors = (data) =>
@@ -93,6 +121,12 @@ const validateRowShape = (data) => {
 
   if (data.email && !validator.isEmail(data.email)) {
     errors.push({ field: 'email', type: 'format', message: 'Email must be valid' });
+  }
+  if (data.personalEmail && !validator.isEmail(data.personalEmail)) {
+    errors.push({ field: 'personalEmail', type: 'format', message: 'Personal email must be valid' });
+  }
+  if (data.collegeEmail && !validator.isEmail(data.collegeEmail)) {
+    errors.push({ field: 'collegeEmail', type: 'format', message: 'College email must be valid' });
   }
   if (data.rollNumber && !/^[A-Z0-9/-]{3,30}$/.test(data.rollNumber)) {
     errors.push({ field: 'rollNumber', type: 'format', message: 'Roll number must be 3-30 letters, numbers, /, or -' });
@@ -109,6 +143,9 @@ const validateRowShape = (data) => {
   if (data.academicYear !== undefined && (!Number.isInteger(data.academicYear) || data.academicYear < 1 || data.academicYear > 6)) {
     errors.push({ field: 'academicYear', type: 'range', message: 'Academic year must be between 1 and 6' });
   }
+  if (data.currentYear !== undefined && (!Number.isInteger(data.currentYear) || data.currentYear < 1 || data.currentYear > 6)) {
+    errors.push({ field: 'currentYear', type: 'range', message: 'Current year must be between 1 and 6' });
+  }
 
   return errors;
 };
@@ -119,11 +156,12 @@ const applyDuplicateErrors = async (rows) => {
 
   const [existingUsers, existingStudents] = await Promise.all([
     User.find({ email: { $in: emails } }).select('email').lean(),
-    Student.find({ rollNumber: { $in: rolls } }).select('rollNumber').lean(),
+    Student.find({ $or: [{ rollNumber: { $in: rolls } }, { collegeEmail: { $in: rows.map((row) => row.data.collegeEmail).filter(Boolean) } }] }).select('rollNumber collegeEmail').lean(),
   ]);
 
   const existingEmails = new Set(existingUsers.map((user) => user.email));
   const existingRolls = new Set(existingStudents.map((student) => student.rollNumber));
+  const existingCollegeEmails = new Set(existingStudents.map((student) => student.collegeEmail).filter(Boolean));
   const seenEmails = new Set();
   const seenRolls = new Set();
 
@@ -143,6 +181,9 @@ const applyDuplicateErrors = async (rows) => {
     }
     if (rollNumber && existingRolls.has(rollNumber)) {
       errors.push({ field: 'rollNumber', type: 'duplicate_database', message: 'Roll number already exists' });
+    }
+    if (row.data.collegeEmail && existingCollegeEmails.has(row.data.collegeEmail)) {
+      errors.push({ field: 'collegeEmail', type: 'duplicate_database', message: 'College email already exists' });
     }
 
     if (email) seenEmails.add(email);
@@ -231,6 +272,7 @@ export const commitStudentBulkUpload = async ({ batchId, uploadedBy }) => {
       password: await bcrypt.hash(temporaryPassword, 12),
       role: 'student',
       isActive: true,
+      mustChangePassword: true,
     }))
   );
 
@@ -243,13 +285,27 @@ export const commitStudentBulkUpload = async ({ batchId, uploadedBy }) => {
       user: userByEmail.get(row.data.email),
       fullName: row.data.fullName,
       phone: row.data.phone,
+      personalEmail: row.data.personalEmail,
+      collegeEmail: row.data.collegeEmail,
+      gender: row.data.gender || undefined,
+      dateOfBirth: row.data.dateOfBirth ? new Date(row.data.dateOfBirth) : undefined,
+      address: row.data.address,
       rollNumber: row.data.rollNumber,
+      batchYear: row.data.batchYear,
+      section: row.data.section,
       branch: row.data.branch,
       department: row.data.department || row.data.branch,
       academicYear: row.data.academicYear,
+      currentYear: row.data.currentYear || row.data.academicYear,
       cgpa: row.data.cgpa,
+      graduationPercentage: row.data.graduationPercentage,
+      tenthPercentage: row.data.tenthPercentage,
+      twelfthPercentage: row.data.twelfthPercentage,
+      diplomaPercentage: row.data.diplomaPercentage,
       skills: row.data.skills,
       backlogs: row.data.backlogs,
+      activeBacklogs: row.data.activeBacklogs,
+      placementConsentStatus: row.data.placementConsentStatus,
     }));
 
     const insertedStudents = await Student.insertMany(students, { ordered: false });

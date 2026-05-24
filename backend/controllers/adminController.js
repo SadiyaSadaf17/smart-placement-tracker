@@ -4,6 +4,8 @@ import Application from '../models/Application.js';
 import User from '../models/User.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { notifyMany } from '../services/notificationService.js';
+import { sendPasswordResetEmail } from '../services/emailService.js';
+import { logAudit } from '../services/auditService.js';
 
 export const getDashboardStats = asyncHandler(async (req, res) => {
   const totalStudents = await Student.countDocuments();
@@ -62,10 +64,26 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
 });
 
 export const getStudents = asyncHandler(async (req, res) => {
-  const { page = 1, limit = 10, branch, search, placementStatus } = req.query;
+  const {
+    page = 1,
+    limit = 10,
+    branch,
+    department,
+    section,
+    batchYear,
+    currentYear,
+    eligibility,
+    search,
+    placementStatus,
+  } = req.query;
   const query = {};
 
   if (branch) query.branch = branch;
+  if (department) query.department = department;
+  if (section) query.section = section;
+  if (batchYear) query.batchYear = batchYear;
+  if (currentYear) query.currentYear = Number(currentYear);
+  if (eligibility) query.placementEligibilityStatus = eligibility;
   if (placementStatus) query.placementStatus = placementStatus;
   if (search) {
     query.$or = [
@@ -92,12 +110,19 @@ export const updateStudent = asyncHandler(async (req, res) => {
   const allowed = [
     'fullName', 'phone', 'branch', 'cgpa', 'skills', 'backlogs',
     'placementStatus', 'placedCompany', 'placedPackage',
+    'batchYear', 'section', 'department', 'currentYear',
+    'graduationPercentage', 'tenthPercentage', 'twelfthPercentage',
+    'diplomaPercentage', 'activeBacklogs', 'backlogHistory',
+    'gender', 'personalEmail', 'collegeEmail', 'dateOfBirth', 'address',
+    'placementConsentStatus', 'placementBlocked', 'currentOfferStatus',
+    'acceptedOfferId', 'placementEligibilityStatus',
   ];
   const updates = {};
   allowed.forEach((k) => {
     if (req.body[k] !== undefined) updates[k] = req.body[k];
   });
 
+  const oldStudent = await Student.findById(req.params.id).lean();
   const student = await Student.findByIdAndUpdate(req.params.id, updates, {
     new: true,
     runValidators: true,
@@ -107,6 +132,16 @@ export const updateStudent = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Student not found');
   }
+
+  await logAudit({
+    actor: req.user,
+    actionType: 'STUDENT_UPDATED',
+    targetEntity: 'Student',
+    targetId: student._id,
+    oldValues: oldStudent,
+    newValues: student.toObject(),
+    ipAddress: req.ip,
+  });
 
   res.json({ success: true, data: student });
 });
@@ -119,7 +154,38 @@ export const deactivateStudent = asyncHandler(async (req, res) => {
   }
 
   await User.findByIdAndUpdate(student.user, { isActive: false });
+  await logAudit({
+    actor: req.user,
+    actionType: 'STUDENT_DEACTIVATED',
+    targetEntity: 'Student',
+    targetId: student._id,
+    ipAddress: req.ip,
+  });
   res.json({ success: true, message: 'Student deactivated' });
+});
+
+export const resendStudentPasswordReset = asyncHandler(async (req, res) => {
+  const student = await Student.findById(req.params.id).populate('user', 'email isActive resetPasswordToken resetPasswordExpire');
+  if (!student || !student.user) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
+  if (!student.user.isActive) {
+    res.status(400);
+    throw new Error('Cannot send reset link to a deactivated account');
+  }
+
+  const resetToken = student.user.getResetPasswordToken();
+  await student.user.save({ validateBeforeSave: false });
+
+  const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+  await sendPasswordResetEmail(student.user.email, resetUrl);
+
+  res.json({
+    success: true,
+    message: `Password reset link sent to ${student.user.email}`,
+  });
 });
 
 export const sendBulkNotification = asyncHandler(async (req, res) => {

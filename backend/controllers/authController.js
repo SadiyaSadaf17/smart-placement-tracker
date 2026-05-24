@@ -6,6 +6,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { generateToken } from '../utils/generateToken.js';
 import { sendPasswordResetEmail } from '../services/emailService.js';
 import { logActivity } from '../services/activityService.js';
+import { logAudit } from '../services/auditService.js';
 import {
   deleteImageFromCloudinary,
   uploadImageToCloudinary,
@@ -19,6 +20,7 @@ const sendAuthResponse = (res, user, profile) => {
       _id: user._id,
       email: user.email,
       role: user.role,
+      mustChangePassword: Boolean(user.mustChangePassword),
       profileImage: user.profileImage || null,
     },
     profile,
@@ -60,6 +62,14 @@ export const login = asyncHandler(async (req, res) => {
 
   const user = await User.findOne({ email }).select('+password');
   if (!user || !(await user.matchPassword(password))) {
+    await logAudit({
+      actor: user || null,
+      actionType: 'LOGIN_FAILED',
+      targetEntity: 'User',
+      targetId: user?._id,
+      newValues: { email },
+      ipAddress: req.ip,
+    });
     res.status(401);
     throw new Error('Invalid email or password');
   }
@@ -77,6 +87,13 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   await logActivity({ user: user._id, action: 'LOGIN', ip: req.ip });
+  await logAudit({
+    actor: user,
+    actionType: 'LOGIN',
+    targetEntity: 'User',
+    targetId: user._id,
+    ipAddress: req.ip,
+  });
   sendAuthResponse(res, user, profile);
 });
 
@@ -94,6 +111,7 @@ export const getMe = asyncHandler(async (req, res) => {
       _id: req.user._id,
       email: req.user.email,
       role: req.user.role,
+      mustChangePassword: Boolean(req.user.mustChangePassword),
       profileImage: req.user.profileImage || null,
     },
     profile,
@@ -135,6 +153,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
   }
 
   user.password = req.body.password;
+  user.mustChangePassword = false;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
   await user.save();
@@ -144,6 +163,13 @@ export const resetPassword = asyncHandler(async (req, res) => {
 
 export const logout = asyncHandler(async (req, res) => {
   await logActivity({ user: req.user._id, action: 'LOGOUT', ip: req.ip });
+  await logAudit({
+    actor: req.user,
+    actionType: 'LOGOUT',
+    targetEntity: 'User',
+    targetId: req.user._id,
+    ipAddress: req.ip,
+  });
   res.json({ success: true, message: 'Logged out successfully' });
 });
 
@@ -156,6 +182,11 @@ export const changePassword = asyncHandler(async (req, res) => {
     throw new Error('New password must be different from current password');
   }
 
+  if (req.user.mustChangePassword && newPassword === 'student123') {
+    res.status(400);
+    throw new Error('Choose a password different from the default password');
+  }
+
   const user = await User.findById(req.user._id).select('+password');
   if (!user || !(await user.matchPassword(currentPassword))) {
     res.status(400);
@@ -163,9 +194,20 @@ export const changePassword = asyncHandler(async (req, res) => {
   }
 
   user.password = newPassword;
+  user.mustChangePassword = false;
   await user.save();
 
-  res.json({ success: true, message: 'Password changed successfully' });
+  res.json({
+    success: true,
+    message: 'Password changed successfully',
+    user: {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+      mustChangePassword: false,
+      profileImage: user.profileImage || null,
+    },
+  });
 });
 
 /* -------------------- UPLOAD PROFILE IMAGE -------------------- */

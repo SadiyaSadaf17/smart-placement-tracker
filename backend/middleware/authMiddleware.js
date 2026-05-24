@@ -3,6 +3,7 @@ import User from '../models/User.js';
 import Student from '../models/Student.js';
 import Admin from '../models/Admin.js';
 import asyncHandler from '../utils/asyncHandler.js';
+import { hasPermission, isStaffRole, STAFF_ROLES } from '../config/rbac.js';
 
 export const protect = asyncHandler(async (req, res, next) => {
   let token;
@@ -37,7 +38,7 @@ export const protect = asyncHandler(async (req, res, next) => {
 
   if (user.role === 'student') {
     req.student = await Student.findOne({ user: user._id });
-  } else if (user.role === 'admin') {
+  } else if (isStaffRole(user.role)) {
     req.admin = await Admin.findOne({ user: user._id });
   }
 
@@ -54,9 +55,19 @@ export const requireStudent = asyncHandler(async (req, res, next) => {
 
 export const authorize = (...roles) =>
   asyncHandler(async (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
+    const normalizedRoles = roles.flatMap((role) => (role === 'admin' ? STAFF_ROLES : role));
+    if (!normalizedRoles.includes(req.user.role)) {
       res.status(403);
       throw new Error(`Role ${req.user.role} is not authorized`);
+    }
+    next();
+  });
+
+export const requirePermission = (permission) =>
+  asyncHandler(async (req, res, next) => {
+    if (!hasPermission(req.user.role, permission)) {
+      res.status(403);
+      throw new Error(`Missing permission: ${permission}`);
     }
     next();
   });

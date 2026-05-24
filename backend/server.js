@@ -23,6 +23,8 @@ import companyRoutes from './routes/companyRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import activityRoutes from './routes/activityRoutes.js';
 import readinessScoreRoutes from './routes/readinessScoreRoutes.js';
+import auditRoutes from './routes/auditRoutes.js';
+import offerRoutes from './routes/offerRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,6 +57,7 @@ app.use(mongoSanitize());
 
 // Serve profile avatars statically
 app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads', 'avatars')));
+app.use('/uploads/offers', express.static(path.join(__dirname, 'uploads', 'offers')));
 
 // Resumes are served via authenticated GET /api/students/resume/file (not public static)
 
@@ -73,6 +76,8 @@ app.use('/api/companies', companyRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/activity', activityRoutes);
 app.use('/api/readiness-score', readinessScoreRoutes);
+app.use('/api/audit', auditRoutes);
+app.use('/api/offers', offerRoutes);
 
 if (!process.env.JWT_SECRET) {
   console.warn('Warning: JWT_SECRET is not set');

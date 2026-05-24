@@ -8,6 +8,7 @@ import {
   createStudentBulkPreview,
 } from '../services/studentBulkUploadService.js';
 import { emitToAdmin } from '../config/socket.js';
+import { logAudit } from '../services/auditService.js';
 
 const paginateRows = async (batchId, page = 1, limit = 50) => {
   const safePage = Math.max(Number(page) || 1, 1);
@@ -38,6 +39,15 @@ export const previewStudentBulkUpload = asyncHandler(async (req, res) => {
   const batch = await createStudentBulkPreview({
     file: req.file,
     uploadedBy: req.user._id,
+  });
+
+  await logAudit({
+    actor: req.user,
+    actionType: 'BULK_STUDENTS_PREVIEWED',
+    targetEntity: 'BulkUploadBatch',
+    targetId: batch._id,
+    newValues: batch.summary,
+    ipAddress: req.ip,
   });
 
   const preview = await paginateRows(batch._id, req.query.page, req.query.limit);
@@ -84,6 +94,14 @@ export const commitStudentBulkUploadBatch = asyncHandler(async (req, res) => {
   });
 
   emitToAdmin('analytics-update', { reason: 'bulk-students-imported' });
+  await logAudit({
+    actor: req.user,
+    actionType: 'BULK_STUDENTS_IMPORTED',
+    targetEntity: 'BulkUploadBatch',
+    targetId: req.params.batchId,
+    newValues: { imported: result.imported, skipped: result.skipped },
+    ipAddress: req.ip,
+  });
 
   res.json({ success: true, data: result });
 });

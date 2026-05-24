@@ -1,9 +1,10 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Spinner from '../components/ui/Spinner';
 
 export default function ProtectedRoute({ role }) {
   const { token, user, loading, bootstrapped } = useSelector((s) => s.auth);
+  const location = useLocation();
 
   if (!token) return <Navigate to="/login" replace />;
 
@@ -22,6 +23,10 @@ export default function ProtectedRoute({ role }) {
         replace
       />
     );
+  }
+
+  if (user?.mustChangePassword && location.pathname !== '/student/change-password') {
+    return <Navigate to="/student/change-password" replace />;
   }
 
   return <Outlet />;

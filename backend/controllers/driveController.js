@@ -6,6 +6,7 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { checkEligibility } from '../utils/eligibility.js';
 import { createNotification, notifyMany } from '../services/notificationService.js';
 import { emitToAdmin } from '../config/socket.js';
+import { logAudit } from '../services/auditService.js';
 
 export const createDrive = asyncHandler(async (req, res) => {
   const drive = await PlacementDrive.create({
@@ -31,6 +32,14 @@ export const createDrive = asyncHandler(async (req, res) => {
   );
 
   emitToAdmin('new-drive', drive);
+  await logAudit({
+    actor: req.user,
+    actionType: 'DRIVE_CREATED',
+    targetEntity: 'PlacementDrive',
+    targetId: drive._id,
+    newValues: drive.toObject(),
+    ipAddress: req.ip,
+  });
 
   res.status(201).json({ success: true, data: drive });
 });
@@ -70,6 +79,7 @@ export const getDriveById = asyncHandler(async (req, res) => {
 });
 
 export const updateDrive = asyncHandler(async (req, res) => {
+  const oldDrive = await PlacementDrive.findById(req.params.id).lean();
   const drive = await PlacementDrive.findByIdAndUpdate(req.params.id, req.body, {
     new: true,
     runValidators: true,
@@ -78,6 +88,15 @@ export const updateDrive = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Drive not found');
   }
+  await logAudit({
+    actor: req.user,
+    actionType: 'DRIVE_UPDATED',
+    targetEntity: 'PlacementDrive',
+    targetId: drive._id,
+    oldValues: oldDrive,
+    newValues: drive.toObject(),
+    ipAddress: req.ip,
+  });
   res.json({ success: true, data: drive });
 });
 
@@ -87,8 +106,26 @@ export const deleteDrive = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Drive not found');
   }
+  await logAudit({
+    actor: req.user,
+    actionType: 'DRIVE_DELETED',
+    targetEntity: 'PlacementDrive',
+    targetId: drive._id,
+    oldValues: drive.toObject(),
+    ipAddress: req.ip,
+  });
   res.json({ success: true, message: 'Drive deleted' });
 });
+
+const evaluateStudentsForDrive = async (drive) => {
+  const students = await Student.find().populate('user', 'email isActive');
+  return students
+    .filter((s) => s.user?.isActive)
+    .map((s) => ({
+      student: s,
+      eligibility: checkEligibility(s, drive),
+    }));
+};
 
 export const getEligibleStudents = asyncHandler(async (req, res) => {
   const drive = await PlacementDrive.findById(req.params.id);
@@ -97,14 +134,34 @@ export const getEligibleStudents = asyncHandler(async (req, res) => {
     throw new Error('Drive not found');
   }
 
-  const students = await Student.find().populate('user', 'email isActive');
-  const eligible = students
-    .filter((s) => s.user?.isActive)
-    .map((s) => ({
-      student: s,
-      eligibility: checkEligibility(s, drive),
-    }))
-    .filter((e) => e.eligibility.eligible);
+  const evaluated = await evaluateStudentsForDrive(drive);
+  const eligible = evaluated.filter((e) => e.eligibility.eligible);
 
   res.json({ success: true, data: eligible, count: eligible.length });
+});
+
+export const previewDriveEligibility = asyncHandler(async (req, res) => {
+  const drive = req.params.id
+    ? await PlacementDrive.findById(req.params.id)
+    : new PlacementDrive(req.body);
+
+  if (!drive) {
+    res.status(404);
+    throw new Error('Drive not found');
+  }
+
+  const evaluated = await evaluateStudentsForDrive(drive);
+  const eligible = evaluated.filter((row) => row.eligibility.eligible);
+  const ineligible = evaluated.filter((row) => !row.eligibility.eligible);
+
+  res.json({
+    success: true,
+    data: {
+      eligibleCount: eligible.length,
+      ineligibleCount: ineligible.length,
+      total: evaluated.length,
+      eligible,
+      ineligible,
+    },
+  });
 });

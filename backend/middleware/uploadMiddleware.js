@@ -7,7 +7,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const uploadDir = path.join(__dirname, '..', 'uploads', 'resumes');
+const offerDir = path.join(__dirname, '..', 'uploads', 'offers');
 fs.mkdirSync(uploadDir, { recursive: true });
+fs.mkdirSync(offerDir, { recursive: true });
 
 const resumeStorage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadDir),
@@ -27,6 +29,20 @@ const resumeFilter = (req, file, cb) => {
 
 export const uploadResume = multer({
   storage: resumeStorage,
+  fileFilter: resumeFilter,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
+
+const offerLetterStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, offerDir),
+  filename: (req, file, cb) => {
+    const unique = `${req.user._id}-${Date.now()}${path.extname(file.originalname)}`;
+    cb(null, unique);
+  },
+});
+
+export const uploadOfferLetter = multer({
+  storage: offerLetterStorage,
   fileFilter: resumeFilter,
   limits: { fileSize: 5 * 1024 * 1024 },
 });

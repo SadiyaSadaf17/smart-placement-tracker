@@ -4,6 +4,7 @@ import {
   getStudents,
   updateStudent,
   deactivateStudent,
+  resendStudentPasswordReset,
   sendBulkNotification,
 } from '../controllers/adminController.js';
 import {
@@ -27,6 +28,7 @@ router.post('/students/bulk/:batchId/commit', commitStudentBulkUploadBatch);
 router.get('/students/bulk/:batchId/errors', downloadStudentBulkUploadErrors);
 router.put('/students/:id', updateStudent);
 router.patch('/students/:id/deactivate', deactivateStudent);
+router.post('/students/:id/password-reset', resendStudentPasswordReset);
 router.post('/notifications/bulk', sendBulkNotification);
 
 export default router;

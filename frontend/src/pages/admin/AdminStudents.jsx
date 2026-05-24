@@ -6,7 +6,9 @@ import PageHeader from '../../components/ui/PageHeader';
 import { LoadingGrid, ErrorState, EmptyState } from '../../components/ui/PageState';
 import { BRANCHES } from '../../utils/constants';
 import { Users } from 'lucide-react';
+import toast from 'react-hot-toast';
 import BulkStudentUpload from '../../components/admin/BulkStudentUpload';
+import Button from '../../components/ui/Button';
 
 export default function AdminStudents() {
   const [students, setStudents] = useState([]);
@@ -14,6 +16,9 @@ export default function AdminStudents() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
   const [branch, setBranch] = useState('');
+  const [department, setDepartment] = useState('');
+  const [batchYear, setBatchYear] = useState('');
+  const [currentYear, setCurrentYear] = useState('');
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
 
@@ -22,7 +27,7 @@ export default function AdminStudents() {
     setError(null);
     try {
       const { data } = await api.get('/admin/students', {
-        params: { search, branch, page, limit: 15 },
+        params: { search, branch, department, batchYear, currentYear, page, limit: 15 },
       });
       setStudents(data.data || []);
       setTotal(data.pagination?.total || 0);
@@ -31,7 +36,16 @@ export default function AdminStudents() {
     } finally {
       setLoading(false);
     }
-  }, [search, branch, page]);
+  }, [search, branch, department, batchYear, currentYear, page]);
+
+  const resendResetLink = async (studentId) => {
+    try {
+      const { data } = await api.post(`/admin/students/${studentId}/password-reset`);
+      toast.success(data.message || 'Password reset link sent');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to send reset link');
+    }
+  };
 
   useEffect(() => {
     const t = setTimeout(load, 300);
@@ -50,6 +64,22 @@ export default function AdminStudents() {
           placeholder="Search name or roll number..."
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+        />
+        <Input
+          placeholder="Department..."
+          value={department}
+          onChange={(e) => { setDepartment(e.target.value); setPage(1); }}
+        />
+        <Input
+          placeholder="Batch e.g. 2022-2026"
+          value={batchYear}
+          onChange={(e) => { setBatchYear(e.target.value); setPage(1); }}
+        />
+        <Input
+          placeholder="Year"
+          type="number"
+          value={currentYear}
+          onChange={(e) => { setCurrentYear(e.target.value); setPage(1); }}
         />
         <select
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"
@@ -78,9 +108,12 @@ export default function AdminStudents() {
                 <th className="p-3 font-medium">Name</th>
                 <th className="p-3 font-medium">Roll</th>
                 <th className="p-3 font-medium">Branch</th>
+                <th className="p-3 font-medium">Dept</th>
+                <th className="p-3 font-medium">Batch</th>
                 <th className="p-3 font-medium">CGPA</th>
                 <th className="p-3 font-medium">ATS</th>
                 <th className="p-3 font-medium">Status</th>
+                <th className="p-3 font-medium">Security</th>
               </tr>
             </thead>
             <tbody>
@@ -89,12 +122,19 @@ export default function AdminStudents() {
                   <td className="p-3 font-medium">{s.fullName}</td>
                   <td className="p-3">{s.rollNumber}</td>
                   <td className="p-3">{s.branch}</td>
+                  <td className="p-3">{s.department || '-'}</td>
+                  <td className="p-3">{s.batchYear || '-'}</td>
                   <td className="p-3">{s.cgpa}</td>
                   <td className="p-3">{s.atsScore ?? '—'}</td>
                   <td className="p-3">
                     <Badge variant={s.placementStatus === 'placed' ? 'success' : 'default'}>
                       {s.placementStatus}
                     </Badge>
+                  </td>
+                  <td className="p-3">
+                    <Button variant="outline" size="sm" onClick={() => resendResetLink(s._id)}>
+                      Send reset
+                    </Button>
                   </td>
                 </tr>
               ))}
