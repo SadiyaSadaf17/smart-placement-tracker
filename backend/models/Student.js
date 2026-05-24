@@ -31,6 +31,8 @@ const studentSchema = new mongoose.Schema(
       required: true,
       enum: ['CSE', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'OTHER'],
     },
+    department: { type: String, trim: true },
+    academicYear: { type: Number, min: 1, max: 6 },
     cgpa: { type: Number, required: true, min: 0, max: 10 },
     skills: [{ type: String, trim: true }],
     backlogs: { type: Number, default: 0, min: 0 },
@@ -74,6 +76,7 @@ const studentSchema = new mongoose.Schema(
 );
 
 studentSchema.index({ branch: 1, cgpa: -1 });
+studentSchema.index({ department: 1, branch: 1, academicYear: 1 });
 studentSchema.index({ placementStatus: 1 });
 studentSchema.index({ branch: 1, placementStatus: 1 });
 studentSchema.index({ placedCompany: 1, placedPackage: -1 });

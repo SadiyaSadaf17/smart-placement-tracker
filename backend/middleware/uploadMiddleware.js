@@ -45,3 +45,27 @@ export const uploadAvatar = multer({
   fileFilter: avatarFilter,
   limits: { fileSize: 2 * 1024 * 1024 },
 });
+
+const spreadsheetMimeTypes = [
+  'text/csv',
+  'text/plain',
+  'application/csv',
+  'application/octet-stream',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+];
+
+const spreadsheetFilter = (req, file, cb) => {
+  const ext = path.extname(file.originalname).toLowerCase();
+  if (['.xlsx', '.csv'].includes(ext) && spreadsheetMimeTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only .xlsx and .csv files are allowed'), false);
+  }
+};
+
+export const uploadStudentBulkFile = multer({
+  storage: multer.memoryStorage(),
+  fileFilter: spreadsheetFilter,
+  limits: { fileSize: 10 * 1024 * 1024 },
+});

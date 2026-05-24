@@ -6,6 +6,7 @@ import PageHeader from '../../components/ui/PageHeader';
 import { LoadingGrid, ErrorState, EmptyState } from '../../components/ui/PageState';
 import { BRANCHES } from '../../utils/constants';
 import { Users } from 'lucide-react';
+import BulkStudentUpload from '../../components/admin/BulkStudentUpload';
 
 export default function AdminStudents() {
   const [students, setStudents] = useState([]);
@@ -40,6 +41,8 @@ export default function AdminStudents() {
   return (
     <section className="animate-fade-in space-y-6">
       <PageHeader title="Students" description={`${total} registered students`} />
+
+      <BulkStudentUpload onImported={load} />
 
       <section className="flex flex-col gap-3 sm:flex-row">
         <Input
