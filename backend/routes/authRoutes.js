@@ -8,6 +8,7 @@ import {
   logout,
   changePassword,
   uploadProfileImage,
+  removeProfileImage,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
@@ -50,5 +51,6 @@ router.put(
 );
 
 router.put('/profile-image', protect, uploadAvatar.single('avatar'), uploadProfileImage);
+router.delete('/profile-image', protect, removeProfileImage);
 
 export default router;

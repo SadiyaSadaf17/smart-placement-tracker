@@ -37,6 +37,14 @@ const applicationSchema = new mongoose.Schema(
     ],
     appliedAt: { type: Date, default: Date.now },
     notes: String,
+    applicationDetails: {
+      fullName: { type: String, trim: true },
+      resume: { type: String },
+      immediateJoiner: { type: Boolean },
+      expectedStipend: { type: Number, min: 0 },
+      contactDetails: { type: String, trim: true },
+      additionalNotes: { type: String, trim: true, maxlength: 1000 },
+    },
   },
   { timestamps: true }
 );

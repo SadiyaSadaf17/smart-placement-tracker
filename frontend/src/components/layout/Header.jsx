@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { toggleTheme } from '../../redux/slices/themeSlice';
 import { logout } from '../../redux/slices/authSlice';
 import api from '../../services/api';
+import Avatar from '../ui/Avatar';
 
 export default function Header({ onMenuClick, title }) {
   const dispatch = useDispatch();
@@ -73,6 +74,8 @@ export default function Header({ onMenuClick, title }) {
           <span className="hidden text-sm text-slate-600 dark:text-slate-400 sm:block px-3 py-2 truncate max-w-[150px]">
             {profile?.fullName || user?.email}
           </span>
+
+          <Avatar src={user?.profileImage} name={profile?.fullName || user?.email} size="sm" className="hidden sm:flex" />
 
           {/* Logout */}
           <button

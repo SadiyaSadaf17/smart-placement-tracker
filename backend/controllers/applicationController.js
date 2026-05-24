@@ -1,3 +1,4 @@
+import fs from 'fs';
 import Application, { ROUND_STATUSES } from '../models/Application.js';
 import Student from '../models/Student.js';
 import PlacementDrive from '../models/PlacementDrive.js';
@@ -7,39 +8,87 @@ import { checkEligibility } from '../utils/eligibility.js';
 import { createNotification } from '../services/notificationService.js';
 import { emitToAdmin, emitToUser } from '../config/socket.js';
 
+const parseBoolean = (value) => {
+  if (typeof value === 'boolean') return value;
+  if (['true', 'yes', '1'].includes(String(value).toLowerCase())) return true;
+  if (['false', 'no', '0'].includes(String(value).toLowerCase())) return false;
+  return null;
+};
+
+const validateApplicationForm = (body, file) => {
+  const errors = [];
+  const fullName = String(body.fullName || '').trim();
+  const contactDetails = String(body.contactDetails || '').trim();
+  const additionalNotes = String(body.additionalNotes || '').trim();
+  const expectedStipend = Number(body.expectedStipend);
+  const immediateJoiner = parseBoolean(body.immediateJoiner);
+
+  if (fullName.length < 2) errors.push('Full name must be at least 2 characters');
+  if (!file) errors.push('Resume PDF is required');
+  if (immediateJoiner === null) errors.push('Immediate joiner must be yes or no');
+  if (!Number.isFinite(expectedStipend) || expectedStipend < 0) {
+    errors.push('Expected stipend must be a valid positive number');
+  }
+  if (contactDetails.length < 5) errors.push('Contact details must be at least 5 characters');
+  if (additionalNotes.length > 1000) errors.push('Additional notes must be 1000 characters or fewer');
+
+  return {
+    errors,
+    values: { fullName, contactDetails, additionalNotes, expectedStipend, immediateJoiner },
+  };
+};
+
+const cleanupUploadedFile = (file) => {
+  if (!file?.path) return;
+  fs.promises.unlink(file.path).catch(() => {});
+};
+
 export const applyForDrive = asyncHandler(async (req, res) => {
   const student = req.student || (await Student.findOne({ user: req.user._id }));
   if (!student) {
+    cleanupUploadedFile(req.file);
     res.status(404);
     throw new Error('Student profile not found');
   }
   const drive = await PlacementDrive.findById(req.params.driveId);
 
   if (!drive) {
+    cleanupUploadedFile(req.file);
     res.status(404);
     throw new Error('Drive not found');
   }
 
   if (!['upcoming', 'active'].includes(drive.driveStatus)) {
+    cleanupUploadedFile(req.file);
     res.status(400);
     throw new Error('Drive is not open for applications');
   }
 
   if (student.placementStatus === 'placed') {
+    cleanupUploadedFile(req.file);
     res.status(400);
     throw new Error('You are already placed and cannot apply for new drives');
   }
 
   const { eligible, reasons } = checkEligibility(student, drive);
   if (!eligible) {
+    cleanupUploadedFile(req.file);
     res.status(400);
     throw new Error(`Not eligible: ${reasons.join('; ')}`);
   }
 
   const existing = await Application.findOne({ student: student._id, drive: drive._id });
   if (existing) {
+    cleanupUploadedFile(req.file);
     res.status(400);
     throw new Error('Already applied for this drive');
+  }
+
+  const { errors, values } = validateApplicationForm(req.body, req.file);
+  if (errors.length) {
+    cleanupUploadedFile(req.file);
+    res.status(400);
+    throw new Error(errors.join(', '));
   }
 
   const application = await Application.create({
@@ -47,6 +96,15 @@ export const applyForDrive = asyncHandler(async (req, res) => {
     drive: drive._id,
     currentRound: 'Applied',
     roundHistory: [{ round: 'Applied', status: 'pending' }],
+    notes: values.additionalNotes,
+    applicationDetails: {
+      fullName: values.fullName,
+      resume: `/uploads/resumes/${req.file.filename}`,
+      immediateJoiner: values.immediateJoiner,
+      expectedStipend: values.expectedStipend,
+      contactDetails: values.contactDetails,
+      additionalNotes: values.additionalNotes,
+    },
   });
 
   await createNotification({

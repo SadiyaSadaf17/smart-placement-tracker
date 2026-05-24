@@ -31,28 +31,17 @@ export const uploadResume = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
-// Configure Avatar Storage & Filter
-const avatarDir = path.join(__dirname, '..', 'uploads', 'avatars');
-fs.mkdirSync(avatarDir, { recursive: true });
-
-const avatarStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, avatarDir),
-  filename: (req, file, cb) => {
-    const unique = `${req.user._id}-${Date.now()}${path.extname(file.originalname)}`;
-    cb(null, unique);
-  },
-});
-
 const avatarFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
+  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+  if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed'), false);
+    cb(new Error('Only JPG, PNG, and WEBP images are allowed'), false);
   }
 };
 
 export const uploadAvatar = multer({
-  storage: avatarStorage,
+  storage: multer.memoryStorage(),
   fileFilter: avatarFilter,
   limits: { fileSize: 2 * 1024 * 1024 },
 });

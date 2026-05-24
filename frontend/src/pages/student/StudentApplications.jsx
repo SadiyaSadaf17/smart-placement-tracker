@@ -41,6 +41,13 @@ export default function StudentApplications() {
               <p className="mt-2 text-xs text-slate-400">
                 Applied {new Date(a.appliedAt).toLocaleDateString()}
               </p>
+              {a.applicationDetails?.fullName && (
+                <section className="mt-3 grid gap-2 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-3">
+                  <span>Joiner: {a.applicationDetails.immediateJoiner ? 'Yes' : 'No'}</span>
+                  <span>Stipend: {a.applicationDetails.expectedStipend ?? 0}</span>
+                  <span className="truncate">Contact: {a.applicationDetails.contactDetails}</span>
+                </section>
+              )}
             </Card>
           ))}
         </section>

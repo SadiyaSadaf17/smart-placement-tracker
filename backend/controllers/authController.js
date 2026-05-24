@@ -6,6 +6,10 @@ import asyncHandler from '../utils/asyncHandler.js';
 import { generateToken } from '../utils/generateToken.js';
 import { sendPasswordResetEmail } from '../services/emailService.js';
 import { logActivity } from '../services/activityService.js';
+import {
+  deleteImageFromCloudinary,
+  uploadImageToCloudinary,
+} from '../services/cloudinaryService.js';
 
 const sendAuthResponse = (res, user, profile) => {
   res.status(200).json({
@@ -147,6 +151,11 @@ export const logout = asyncHandler(async (req, res) => {
 export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
 
+  if (currentPassword === newPassword) {
+    res.status(400);
+    throw new Error('New password must be different from current password');
+  }
+
   const user = await User.findById(req.user._id).select('+password');
   if (!user || !(await user.matchPassword(currentPassword))) {
     res.status(400);
@@ -166,9 +175,25 @@ export const uploadProfileImage = asyncHandler(async (req, res) => {
     throw new Error('Please upload an image file');
   }
 
-  const avatarPath = `/uploads/avatars/${req.file.filename}`;
-  const user = await User.findById(req.user._id);
-  user.profileImage = avatarPath;
+  const user = await User.findById(req.user._id).select('+profileImagePublicId');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  const publicId = `user-${user._id}`;
+  const uploaded = await uploadImageToCloudinary({
+    buffer: req.file.buffer,
+    mimetype: req.file.mimetype,
+    publicId,
+  });
+
+  if (user.profileImagePublicId && user.profileImagePublicId !== uploaded.publicId) {
+    await deleteImageFromCloudinary(user.profileImagePublicId);
+  }
+
+  user.profileImage = uploaded.secureUrl;
+  user.profileImagePublicId = uploaded.publicId;
   await user.save();
 
   let profile = null;
@@ -180,6 +205,7 @@ export const uploadProfileImage = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
+    message: 'Profile image updated successfully',
     user: {
       _id: user._id,
       email: user.email,
@@ -187,5 +213,32 @@ export const uploadProfileImage = asyncHandler(async (req, res) => {
       profileImage: user.profileImage,
     },
     profile,
+  });
+});
+
+export const removeProfileImage = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select('+profileImagePublicId');
+  if (!user) {
+    res.status(404);
+    throw new Error('User not found');
+  }
+
+  if (user.profileImagePublicId) {
+    await deleteImageFromCloudinary(user.profileImagePublicId);
+  }
+
+  user.profileImage = null;
+  user.profileImagePublicId = null;
+  await user.save();
+
+  res.json({
+    success: true,
+    message: 'Profile image removed successfully',
+    user: {
+      _id: user._id,
+      email: user.email,
+      role: user.role,
+      profileImage: null,
+    },
   });
 });

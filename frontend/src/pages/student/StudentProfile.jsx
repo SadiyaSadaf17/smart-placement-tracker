@@ -1,15 +1,18 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useSelector } from 'react-redux';
 import api from '../../services/api';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import Avatar from '../../components/ui/Avatar';
 import { BRANCHES } from '../../utils/constants';
 
 export default function StudentProfile() {
   const [profile, setProfile] = useState(null);
   const [skillsInput, setSkillsInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const { user } = useSelector((s) => s.auth);
 
   useEffect(() => {
     api.get('/students/profile').then((r) => {
@@ -37,6 +40,13 @@ export default function StudentProfile() {
 
   return (
     <Card title="My Profile" subtitle="Keep your details up to date for eligibility">
+      <section className="mb-6 flex items-center gap-4">
+        <Avatar src={user?.profileImage} name={profile.fullName} size="md" />
+        <section className="min-w-0">
+          <p className="truncate font-semibold text-slate-900 dark:text-white">{profile.fullName}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{profile.rollNumber}</p>
+        </section>
+      </section>
       <section className="grid gap-4 sm:grid-cols-2">
         <Input label="Full Name" value={profile.fullName || ''} onChange={(e) => update('fullName', e.target.value)} />
         <Input label="Phone" value={profile.phone || ''} onChange={(e) => update('phone', e.target.value)} />
