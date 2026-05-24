@@ -36,6 +36,8 @@ const placementDriveSchema = new mongoose.Schema(
 
 placementDriveSchema.index({ driveStatus: 1, interviewDate: 1 });
 placementDriveSchema.index({ companyName: 'text', role: 'text' });
+placementDriveSchema.index({ companyName: 1, interviewDate: -1 });
+placementDriveSchema.index({ package: -1 });
 
 const PlacementDrive = mongoose.model('PlacementDrive', placementDriveSchema);
 export default PlacementDrive;

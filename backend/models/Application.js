@@ -52,6 +52,9 @@ const applicationSchema = new mongoose.Schema(
 applicationSchema.index({ student: 1, drive: 1 }, { unique: true });
 applicationSchema.index({ currentRound: 1 });
 applicationSchema.index({ drive: 1 });
+applicationSchema.index({ currentRound: 1, updatedAt: -1 });
+applicationSchema.index({ student: 1, currentRound: 1 });
+applicationSchema.index({ appliedAt: -1 });
 
 export { ROUND_STATUSES };
 const Application = mongoose.model('Application', applicationSchema);

@@ -75,6 +75,8 @@ const studentSchema = new mongoose.Schema(
 
 studentSchema.index({ branch: 1, cgpa: -1 });
 studentSchema.index({ placementStatus: 1 });
+studentSchema.index({ branch: 1, placementStatus: 1 });
+studentSchema.index({ placedCompany: 1, placedPackage: -1 });
 
 const Student = mongoose.model('Student', studentSchema);
 export default Student;

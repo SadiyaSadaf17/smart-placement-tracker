@@ -17,6 +17,8 @@ export default function AdminReports() {
         <Button onClick={() => download('/reports/students/pdf', 'students.pdf')}>Students PDF</Button>
         <Button variant="secondary" onClick={() => download('/reports/students/excel', 'students.xlsx')}>Students Excel</Button>
         <Button variant="secondary" onClick={() => download('/reports/applications/excel', 'applications.xlsx')}>Applications Excel</Button>
+        <Button variant="secondary" onClick={() => download('/reports/analytics/monthly/pdf', 'monthly-placement-report.pdf')}>Monthly PDF</Button>
+        <Button variant="secondary" onClick={() => download('/reports/analytics/monthly/excel', 'monthly-placement-report.xlsx')}>Monthly Excel</Button>
       </section>
     </Card>
   );

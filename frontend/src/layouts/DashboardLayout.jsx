@@ -21,6 +21,7 @@ const PAGE_TITLES = {
   '/student/companies': 'Companies',
   '/student/applications': 'Applications',
   '/student/resume': 'Resume & AI',
+  '/student/readiness': 'Readiness',
   '/student/notifications': 'Notifications',
   '/student/settings': 'Settings',
 };

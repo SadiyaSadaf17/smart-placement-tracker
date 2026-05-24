@@ -3,6 +3,8 @@ import {
   exportStudentsPDF,
   exportStudentsExcel,
   exportApplicationsExcel,
+  exportMonthlyAnalyticsPDF,
+  exportMonthlyAnalyticsExcel,
   getSummaryReport,
 } from '../controllers/reportController.js';
 import { protect, authorize } from '../middleware/authMiddleware.js';
@@ -15,5 +17,7 @@ router.get('/summary', getSummaryReport);
 router.get('/students/pdf', exportStudentsPDF);
 router.get('/students/excel', exportStudentsExcel);
 router.get('/applications/excel', exportApplicationsExcel);
+router.get('/analytics/monthly/pdf', exportMonthlyAnalyticsPDF);
+router.get('/analytics/monthly/excel', exportMonthlyAnalyticsExcel);
 
 export default router;

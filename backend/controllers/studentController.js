@@ -23,6 +23,7 @@ import {
   analyzeResumeWithAI,
 } from '../services/geminiService.js';
 import { recalculateReadinessScore } from '../services/readinessScoreService.js';
+import { emitToAdmin } from '../config/socket.js';
 
 // __dirname fix for ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -77,6 +78,7 @@ export const updateProfile = asyncHandler(async (req, res) => {
   student.atsScore = calculateATSScore(student);
   await student.save();
   await recalculateReadinessScore(student);
+  emitToAdmin('analytics-update', { reason: 'student-profile-updated' });
 
   res.json({ success: true, data: student });
 });
@@ -173,6 +175,7 @@ export const uploadResume = asyncHandler(async (req, res) => {
 
   await student.save();
   await recalculateReadinessScore(student);
+  emitToAdmin('analytics-update', { reason: 'student-resume-updated' });
 
   res.json({
     success: true,

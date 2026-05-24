@@ -118,6 +118,7 @@ export const applyForDrive = asyncHandler(async (req, res) => {
 
   emitToAdmin('new-application', { application, drive, student });
   await recalculateReadinessScore(student);
+  emitToAdmin('analytics-update', { reason: 'application-created' });
 
   const populated = await Application.findById(application._id)
     .populate('drive', 'companyName role package location')
@@ -252,12 +253,14 @@ export const updateApplicationRound = asyncHandler(async (req, res) => {
       placedPackage: application.drive.package,
     }, { new: true });
     await recalculateReadinessScore(updatedStudent);
+    emitToAdmin('analytics-update', { reason: 'student-selected' });
     emitToUser(studentUser._id.toString(), 'selection', {
       company: application.drive.companyName,
       package: application.drive.package,
     });
   } else {
     await recalculateReadinessScore(application.student);
+    emitToAdmin('analytics-update', { reason: 'application-round-updated' });
   }
 
   emitToUser(studentUser._id.toString(), 'application-update', {
