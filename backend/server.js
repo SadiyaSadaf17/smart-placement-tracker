@@ -29,6 +29,7 @@ import offerRoutes from './routes/offerRoutes.js';
 import scheduleRoutes from './routes/scheduleRoutes.js';
 import policyRoutes from './routes/policyRoutes.js';
 import emailRoutes from './routes/emailRoutes.js';
+import enterpriseRoutes from './routes/enterpriseRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -103,6 +104,7 @@ app.use('/api/offers', offerRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/policies/placement', policyRoutes);
 app.use('/api/email', emailRoutes);
+app.use('/api/enterprise', enterpriseRoutes);
 
 if (!process.env.JWT_SECRET) {
   console.warn('Warning: JWT_SECRET is not set');
