@@ -6,8 +6,10 @@ import Offer from '../models/Offer.js';
 import PlacementDrive from '../models/PlacementDrive.js';
 import Student from '../models/Student.js';
 import User from '../models/User.js';
+import MockTest from '../models/MockTest.js';
+import MockTestSubmission from '../models/MockTestSubmission.js';
 
-const models = [User, Student, Application, Offer, PlacementDrive, CalendarEvent];
+const models = [User, Student, Application, Offer, PlacementDrive, CalendarEvent, MockTest, MockTestSubmission];
 
 const run = async () => {
   if (!process.env.MONGODB_URI) {

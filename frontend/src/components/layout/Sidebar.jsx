@@ -4,6 +4,7 @@ import { X } from 'lucide-react';
 import {
   LayoutDashboard, User, Building2, FileText, Bell, FileUp,
   Users, BarChart3, Download, Briefcase, ClipboardList, Settings, Megaphone, Gauge, Award, ShieldCheck, CalendarDays, Target, GraduationCap,
+  ListChecks,
 } from 'lucide-react';
 import { hasPermission, isStaffRole, PERMISSIONS } from '../../utils/rbac';
 
@@ -15,6 +16,7 @@ const studentLinks = [
   { to: '/student/history', label: 'History', icon: ClipboardList },
   { to: '/student/schedule', label: 'Schedule', icon: CalendarDays },
   { to: '/student/development', label: 'Development', icon: GraduationCap },
+  { to: '/student/assessments', label: 'Assessments', icon: ListChecks },
   { to: '/student/resume', label: 'Resume & AI', icon: FileUp },
   { to: '/student/readiness', label: 'Readiness', icon: Gauge },
   { to: '/student/offers', label: 'Offers', icon: Award },
@@ -36,6 +38,7 @@ const adminLinks = [
   { to: '/admin/audit', label: 'Audit', icon: ShieldCheck, permission: PERMISSIONS.VIEW_AUDIT_LOGS },
   { to: '/admin/policies', label: 'Policies', icon: Settings, permission: PERMISSIONS.MANAGE_DRIVES },
   { to: '/admin/enterprise', label: 'Enterprise', icon: GraduationCap, permission: PERMISSIONS.VIEW_REPORTS },
+  { to: '/admin/assessments', label: 'Assessments', icon: ListChecks, permission: PERMISSIONS.MANAGE_STUDENTS },
   { to: '/admin/notifications', label: 'Inbox', icon: Bell, permission: PERMISSIONS.VIEW_DASHBOARD },
   { to: '/admin/broadcast', label: 'Broadcast', icon: Megaphone, permission: PERMISSIONS.SEND_NOTIFICATIONS },
   { to: '/admin/settings', label: 'Settings', icon: Settings },

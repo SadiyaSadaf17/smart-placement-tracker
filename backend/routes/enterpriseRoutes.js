@@ -1,6 +1,22 @@
 import express from 'express';
 import { listResumes, downloadResumeZip } from '../controllers/resumeRepositoryController.js';
-import { createMockTest, getMockTestById, getMockTests, getMyMockAnalytics, getMyMockResults, submitMockTest } from '../controllers/mockTestController.js';
+import {
+  autosaveMockAttempt,
+  createMockTest,
+  deleteMockTest,
+  getActiveMockAttempt,
+  getAdminMockAnalytics,
+  getMockAttemptReview,
+  getMockLeaderboard,
+  getMockTestById,
+  getMockTests,
+  getMyMockAnalytics,
+  getMyMockResults,
+  recordAntiCheatEvent,
+  startMockTestAttempt,
+  submitMockTest,
+  updateMockTest,
+} from '../controllers/mockTestController.js';
 import { createInterviewFeedback, getFeedback, getFeedbackAnalytics } from '../controllers/interviewFeedbackController.js';
 import { getConsentAnalytics, updateMyConsent } from '../controllers/consentController.js';
 import { createCalendarEvent, getCalendarEvents } from '../controllers/calendarController.js';
@@ -20,10 +36,20 @@ router.get('/resumes/zip', requirePermission(PERMISSIONS.VIEW_STUDENTS), downloa
 
 router.get('/mock-tests', getMockTests);
 router.post('/mock-tests', requirePermission(PERMISSIONS.MANAGE_STUDENTS), createMockTest);
+router.get('/mock-tests/analytics/admin', requirePermission(PERMISSIONS.VIEW_ANALYTICS), getAdminMockAnalytics);
 router.get('/mock-tests/my/results', authorize('student'), requireStudent, getMyMockResults);
 router.get('/mock-tests/my/analytics', authorize('student'), requireStudent, getMyMockAnalytics);
 router.get('/mock-tests/:id', getMockTestById);
+router.put('/mock-tests/:id', requirePermission(PERMISSIONS.MANAGE_STUDENTS), updateMockTest);
+router.delete('/mock-tests/:id', requirePermission(PERMISSIONS.MANAGE_STUDENTS), deleteMockTest);
+router.get('/mock-tests/:id/leaderboard', getMockLeaderboard);
+router.post('/mock-tests/:id/start', authorize('student'), requireStudent, startMockTestAttempt);
 router.post('/mock-tests/:id/submit', authorize('student'), requireStudent, submitMockTest);
+router.get('/mock-tests/attempts/:attemptId', authorize('student'), requireStudent, getActiveMockAttempt);
+router.patch('/mock-tests/attempts/:attemptId/autosave', authorize('student'), requireStudent, autosaveMockAttempt);
+router.post('/mock-tests/attempts/:attemptId/anti-cheat', authorize('student'), requireStudent, recordAntiCheatEvent);
+router.post('/mock-tests/:id/attempts/:attemptId/submit', authorize('student'), requireStudent, submitMockTest);
+router.get('/mock-tests/attempts/:attemptId/review', authorize('student'), requireStudent, getMockAttemptReview);
 
 router.get('/feedback', getFeedback);
 router.get('/feedback/analytics', getFeedbackAnalytics);

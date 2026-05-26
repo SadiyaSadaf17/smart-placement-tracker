@@ -21,6 +21,7 @@ const StudentApplications = lazy(() => import('../pages/student/StudentApplicati
 const StudentResume = lazy(() => import('../pages/student/StudentResume'));
 const StudentReadiness = lazy(() => import('../pages/student/StudentReadiness'));
 const StudentOffers = lazy(() => import('../pages/student/StudentOffers'));
+const StudentAssessments = lazy(() => import('../pages/student/StudentAssessments'));
 const NotificationsPage = lazy(() => import('../pages/shared/NotificationsPage'));
 const SettingsPage = lazy(() => import('../pages/shared/SettingsPage'));
 const AdminDashboard = lazy(() => import('../pages/admin/AdminDashboard'));
@@ -38,6 +39,7 @@ const AdminScheduler = lazy(() => import('../pages/admin/AdminScheduler'));
 const AdminStudentDetail = lazy(() => import('../pages/admin/AdminStudentDetail'));
 const AdminPolicies = lazy(() => import('../pages/admin/AdminPolicies'));
 const AdminEnterpriseTools = lazy(() => import('../pages/admin/AdminEnterpriseTools'));
+const AdminAssessments = lazy(() => import('../pages/admin/AdminAssessments'));
 const StudentApplicationHistory = lazy(() => import('../pages/student/StudentApplicationHistory'));
 const StudentSchedule = lazy(() => import('../pages/student/StudentSchedule'));
 const StudentDevelopment = lazy(() => import('../pages/student/StudentDevelopment'));
@@ -75,6 +77,7 @@ export default function AppRoutes() {
           <Route path="history" element={<StudentApplicationHistory />} />
           <Route path="schedule" element={<StudentSchedule />} />
           <Route path="development" element={<StudentDevelopment />} />
+          <Route path="assessments" element={<StudentAssessments />} />
           <Route path="resume" element={<StudentResume />} />
           <Route path="readiness" element={<StudentReadiness />} />
           <Route path="offers" element={<StudentOffers />} />
@@ -101,6 +104,7 @@ export default function AppRoutes() {
           <Route path="audit" element={page(<AdminAuditLogs />, PERMISSIONS.VIEW_AUDIT_LOGS)} />
           <Route path="policies" element={page(<AdminPolicies />, PERMISSIONS.MANAGE_DRIVES)} />
           <Route path="enterprise" element={page(<AdminEnterpriseTools />, PERMISSIONS.VIEW_REPORTS)} />
+          <Route path="assessments" element={page(<AdminAssessments />, PERMISSIONS.MANAGE_STUDENTS)} />
           <Route path="notifications" element={page(<NotificationsPage />, PERMISSIONS.VIEW_DASHBOARD)} />
           <Route path="broadcast" element={page(<AdminNotifications />, PERMISSIONS.SEND_NOTIFICATIONS)} />
           <Route path="settings" element={<SettingsPage />} />
