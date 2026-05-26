@@ -46,7 +46,7 @@ setupSocket(server);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(
   cors({
-    origin: env.clientUrl,
+    origin: [env.clientUrl, 'https://smart-placement-tracker-beta.vercel.app'],
     credentials: true,
   })
 );
