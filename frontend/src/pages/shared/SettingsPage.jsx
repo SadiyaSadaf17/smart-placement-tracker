@@ -10,7 +10,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Avatar from '../../components/ui/Avatar';
 import { toggleTheme } from '../../redux/slices/themeSlice';
-import { logout, updateAuthUser } from '../../redux/slices/authSlice';
+import { logout, updateAuthSession, updateAuthUser } from '../../redux/slices/authSlice';
 
 const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -50,7 +50,7 @@ export default function SettingsPage() {
   const validatePassword = () => {
     const errors = {};
     if (!passwordForm.currentPassword) errors.currentPassword = 'Current password is required';
-    if (passwordForm.newPassword.length < 6) errors.newPassword = 'Password must be at least 6 characters';
+    if (passwordForm.newPassword.length < 8) errors.newPassword = 'Password must be at least 8 characters';
     if (passwordForm.currentPassword && passwordForm.currentPassword === passwordForm.newPassword) {
       errors.newPassword = 'Use a different password';
     }
@@ -71,7 +71,7 @@ export default function SettingsPage() {
         currentPassword: passwordForm.currentPassword,
         newPassword: passwordForm.newPassword,
       });
-      if (data.user) dispatch(updateAuthUser(data.user));
+      if (data.user) dispatch(updateAuthSession({ user: data.user, token: data.token }));
       setPasswordForm(initialPasswordForm);
       toast.success(data.message || 'Password changed successfully');
     } catch (error) {

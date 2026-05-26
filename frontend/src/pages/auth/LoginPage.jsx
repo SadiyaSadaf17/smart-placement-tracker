@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { loginUser, clearError } from '../../redux/slices/authSlice';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import { isStaffRole } from '../../utils/rbac';
 
 export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -19,7 +20,7 @@ export default function LoginPage() {
     if (loginUser.fulfilled.match(result)) {
       toast.success('Welcome back!');
       const role = result.payload.user.role;
-      navigate(role === 'admin' ? '/admin/dashboard' : '/student/dashboard');
+      navigate(isStaffRole(role) ? '/admin/dashboard' : '/student/dashboard');
     } else toast.error(result.payload || 'Login failed');
   };
 

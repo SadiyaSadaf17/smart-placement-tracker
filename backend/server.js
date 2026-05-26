@@ -4,12 +4,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoSanitize from 'express-mongo-sanitize';
+import compression from 'compression';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import http from 'http';
-import zlib from 'zlib';
 
 import connectDB from './config/db.js';
+import { env, validateEnv } from './config/env.js';
 import { setupSocket } from './config/socket.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
@@ -34,6 +35,7 @@ import enterpriseRoutes from './routes/enterpriseRoutes.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+validateEnv();
 connectDB();
 
 const app = express();
@@ -44,7 +46,7 @@ setupSocket(server);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 app.use(
   cors({
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
+    origin: env.clientUrl,
     credentials: true,
   })
 );
@@ -59,24 +61,7 @@ app.use('/api', limiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(mongoSanitize());
-
-app.use((req, res, next) => {
-  const acceptEncoding = req.headers['accept-encoding'] || '';
-  if (!/\bgzip\b/.test(acceptEncoding)) return next();
-  const originalJson = res.json.bind(res);
-  res.json = (body) => {
-    const payload = Buffer.from(JSON.stringify(body));
-    if (payload.length < 1024) return originalJson(body);
-    zlib.gzip(payload, (err, compressed) => {
-      if (err) return originalJson(body);
-      res.setHeader('Content-Encoding', 'gzip');
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.send(compressed);
-    });
-    return res;
-  };
-  next();
-});
+app.use(compression());
 
 // Serve profile avatars statically
 app.use('/uploads/avatars', express.static(path.join(__dirname, 'uploads', 'avatars')));
@@ -85,7 +70,15 @@ app.use('/uploads/offers', express.static(path.join(__dirname, 'uploads', 'offer
 // Resumes are served via authenticated GET /api/students/resume/file (not public static)
 
 app.get('/api/health', (req, res) => {
-  res.json({ success: true, message: 'Placement Tracker API is running' });
+  res.json({
+    success: true,
+    message: 'Placement Tracker API is running',
+    data: {
+      uptime: process.uptime(),
+      environment: env.nodeEnv,
+      timestamp: new Date().toISOString(),
+    },
+  });
 });
 
 app.use('/api/auth', authRoutes);
@@ -105,10 +98,6 @@ app.use('/api/schedules', scheduleRoutes);
 app.use('/api/policies/placement', policyRoutes);
 app.use('/api/email', emailRoutes);
 app.use('/api/enterprise', enterpriseRoutes);
-
-if (!process.env.JWT_SECRET) {
-  console.warn('Warning: JWT_SECRET is not set');
-}
 
 app.use(notFound);
 app.use(errorHandler);

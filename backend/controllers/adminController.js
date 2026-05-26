@@ -9,15 +9,18 @@ import { logAudit } from '../services/auditService.js';
 import Offer from '../models/Offer.js';
 import ReadinessScore from '../models/ReadinessScore.js';
 import AuditLog from '../models/AuditLog.js';
+import { canAccessStudent, applyStudentScope } from '../utils/dataScope.js';
+import { addSearch, buildPaginationMeta, getPagination } from '../utils/queryUtils.js';
 
 export const getDashboardStats = asyncHandler(async (req, res) => {
-  const totalStudents = await Student.countDocuments();
-  const placedStudents = await Student.countDocuments({ placementStatus: 'placed' });
+  const studentScope = applyStudentScope({}, req);
+  const totalStudents = await Student.countDocuments(studentScope);
+  const placedStudents = await Student.countDocuments({ ...studentScope, placementStatus: 'placed' });
   const activeDrives = await PlacementDrive.countDocuments({
     driveStatus: { $in: ['upcoming', 'active'] },
   });
 
-  const placedData = await Student.find({ placementStatus: 'placed', placedPackage: { $gt: 0 } });
+  const placedData = await Student.find({ ...studentScope, placementStatus: 'placed', placedPackage: { $gt: 0 } });
   const packages = placedData.map((s) => s.placedPackage).filter(Boolean);
   const highestPackage = packages.length ? Math.max(...packages) : 0;
   const averagePackage = packages.length
@@ -25,6 +28,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     : 0;
 
   const branchWise = await Student.aggregate([
+    { $match: studentScope },
     {
       $group: {
         _id: '$branch',
@@ -68,8 +72,6 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
 
 export const getStudents = asyncHandler(async (req, res) => {
   const {
-    page = 1,
-    limit = 10,
     branch,
     department,
     section,
@@ -79,7 +81,8 @@ export const getStudents = asyncHandler(async (req, res) => {
     search,
     placementStatus,
   } = req.query;
-  const query = {};
+  const { page, limit, skip } = getPagination(req.query);
+  let query = {};
 
   if (branch) query.branch = branch;
   if (department) query.department = department;
@@ -88,24 +91,20 @@ export const getStudents = asyncHandler(async (req, res) => {
   if (currentYear) query.currentYear = Number(currentYear);
   if (eligibility) query.placementEligibilityStatus = eligibility;
   if (placementStatus) query.placementStatus = placementStatus;
-  if (search) {
-    query.$or = [
-      { fullName: { $regex: search, $options: 'i' } },
-      { rollNumber: { $regex: search, $options: 'i' } },
-    ];
-  }
+  query = addSearch(query, search, ['fullName', 'rollNumber', 'collegeEmail', 'personalEmail']);
+  query = applyStudentScope(query, req);
 
   const total = await Student.countDocuments(query);
   const students = await Student.find(query)
     .populate('user', 'email isActive')
     .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(Number(limit));
+    .skip(skip)
+    .limit(limit);
 
   res.json({
     success: true,
     data: students,
-    pagination: { page: Number(page), limit: Number(limit), total },
+    pagination: buildPaginationMeta({ page, limit, total }),
   });
 });
 
@@ -126,6 +125,11 @@ export const updateStudent = asyncHandler(async (req, res) => {
   });
 
   const oldStudent = await Student.findById(req.params.id).lean();
+  if (!oldStudent || !canAccessStudent(oldStudent, req)) {
+    res.status(404);
+    throw new Error('Student not found');
+  }
+
   const student = await Student.findByIdAndUpdate(req.params.id, updates, {
     new: true,
     runValidators: true,
@@ -151,7 +155,7 @@ export const updateStudent = asyncHandler(async (req, res) => {
 
 export const deactivateStudent = asyncHandler(async (req, res) => {
   const student = await Student.findById(req.params.id);
-  if (!student) {
+  if (!student || !canAccessStudent(student, req)) {
     res.status(404);
     throw new Error('Student not found');
   }
@@ -169,7 +173,7 @@ export const deactivateStudent = asyncHandler(async (req, res) => {
 
 export const resendStudentPasswordReset = asyncHandler(async (req, res) => {
   const student = await Student.findById(req.params.id).populate('user', 'email isActive resetPasswordToken resetPasswordExpire');
-  if (!student || !student.user) {
+  if (!student || !student.user || !canAccessStudent(student, req)) {
     res.status(404);
     throw new Error('Student not found');
   }
@@ -193,7 +197,7 @@ export const resendStudentPasswordReset = asyncHandler(async (req, res) => {
 
 export const sendBulkNotification = asyncHandler(async (req, res) => {
   const { title, message, branch, type = 'info' } = req.body;
-  const query = branch ? { branch } : {};
+  const query = applyStudentScope(branch ? { branch } : {}, req);
   const students = await Student.find(query);
   const users = await User.find({
     _id: { $in: students.map((s) => s.user) },
@@ -211,7 +215,7 @@ export const sendBulkNotification = asyncHandler(async (req, res) => {
 
 export const getStudentProfileDetail = asyncHandler(async (req, res) => {
   const student = await Student.findById(req.params.id).populate('user', 'email isActive profileImage');
-  if (!student) {
+  if (!student || !canAccessStudent(student, req)) {
     res.status(404);
     throw new Error('Student not found');
   }

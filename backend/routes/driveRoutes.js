@@ -12,22 +12,23 @@ import {
   downloadDriveEligibilityReport,
   transitionDriveWorkflowStage,
 } from '../controllers/driveController.js';
-import { protect, authorize } from '../middleware/authMiddleware.js';
+import { protect, requirePermission } from '../middleware/authMiddleware.js';
+import { PERMISSIONS } from '../config/rbac.js';
 
 const router = express.Router();
 
 router.get('/', protect, getDrives);
-router.get('/:id/eligible-students', protect, authorize('admin'), getEligibleStudents);
-router.get('/:id/eligibility-preview', protect, authorize('admin'), previewDriveEligibility);
-router.post('/:id/eligibility-recalculate', protect, authorize('admin'), recalculateDriveEligibility);
-router.post('/:id/notify-eligible', protect, authorize('admin'), notifyDriveEligibleStudents);
-router.get('/:id/eligibility-report', protect, authorize('admin'), downloadDriveEligibilityReport);
-router.patch('/:id/workflow', protect, authorize('admin'), transitionDriveWorkflowStage);
+router.get('/:id/eligible-students', protect, requirePermission(PERMISSIONS.VIEW_STUDENTS), getEligibleStudents);
+router.get('/:id/eligibility-preview', protect, requirePermission(PERMISSIONS.VIEW_STUDENTS), previewDriveEligibility);
+router.post('/:id/eligibility-recalculate', protect, requirePermission(PERMISSIONS.MANAGE_DRIVES), recalculateDriveEligibility);
+router.post('/:id/notify-eligible', protect, requirePermission(PERMISSIONS.SEND_NOTIFICATIONS), notifyDriveEligibleStudents);
+router.get('/:id/eligibility-report', protect, requirePermission(PERMISSIONS.VIEW_REPORTS), downloadDriveEligibilityReport);
+router.patch('/:id/workflow', protect, requirePermission(PERMISSIONS.MANAGE_DRIVES), transitionDriveWorkflowStage);
 router.get('/:id', protect, getDriveById);
 
-router.post('/', protect, authorize('admin'), createDrive);
-router.post('/eligibility-preview', protect, authorize('admin'), previewDriveEligibility);
-router.put('/:id', protect, authorize('admin'), updateDrive);
-router.delete('/:id', protect, authorize('admin'), deleteDrive);
+router.post('/', protect, requirePermission(PERMISSIONS.MANAGE_DRIVES), createDrive);
+router.post('/eligibility-preview', protect, requirePermission(PERMISSIONS.MANAGE_DRIVES), previewDriveEligibility);
+router.put('/:id', protect, requirePermission(PERMISSIONS.MANAGE_DRIVES), updateDrive);
+router.delete('/:id', protect, requirePermission(PERMISSIONS.MANAGE_DRIVES), deleteDrive);
 
 export default router;

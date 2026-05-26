@@ -10,6 +10,7 @@ const adminSchema = new mongoose.Schema(
     },
     fullName: { type: String, required: true, trim: true },
     department: { type: String, default: 'Training & Placement' },
+    assignedStudents: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Student' }],
     phone: String,
   },
   { timestamps: true }

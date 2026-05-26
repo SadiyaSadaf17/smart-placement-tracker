@@ -28,7 +28,7 @@ export default function ResetPasswordPage() {
     <section>
       <h2 className="text-2xl font-bold">Reset Password</h2>
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-        <Input label="New Password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Input label="New Password" type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
         <Button type="submit" className="w-full" loading={loading}>Reset Password</Button>
       </form>
       <p className="mt-4 text-center text-sm"><Link to="/login" className="text-primary-600">Login</Link></p>

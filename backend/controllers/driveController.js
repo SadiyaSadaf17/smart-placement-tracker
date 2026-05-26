@@ -14,6 +14,8 @@ import {
   notifyEligibleStudents,
 } from '../services/eligibilityService.js';
 import { transitionDriveStage } from '../services/driveWorkflowService.js';
+import { applyDriveScope } from '../utils/dataScope.js';
+import { addSearch, buildPaginationMeta, getPagination } from '../utils/queryUtils.js';
 
 export const createDrive = asyncHandler(async (req, res) => {
   const drive = await PlacementDrive.create({
@@ -52,32 +54,32 @@ export const createDrive = asyncHandler(async (req, res) => {
 });
 
 export const getDrives = asyncHandler(async (req, res) => {
-  const { status, search, page = 1, limit = 10 } = req.query;
-  const query = {};
+  const { status, search } = req.query;
+  const { page, limit, skip } = getPagination(req.query);
+  let query = {};
 
   if (status) query.driveStatus = status;
-  if (search) {
-    query.$or = [
-      { companyName: { $regex: search, $options: 'i' } },
-      { role: { $regex: search, $options: 'i' } },
-    ];
-  }
+  query = addSearch(query, search, ['companyName', 'role']);
+  if (req.user.role !== 'student') query = applyDriveScope(query, req);
 
   const total = await PlacementDrive.countDocuments(query);
   const drives = await PlacementDrive.find(query)
     .sort({ createdAt: -1 })
-    .skip((page - 1) * limit)
-    .limit(Number(limit));
+    .skip(skip)
+    .limit(limit);
 
   res.json({
     success: true,
     data: drives,
-    pagination: { page: Number(page), limit: Number(limit), total },
+    pagination: buildPaginationMeta({ page, limit, total }),
   });
 });
 
 export const getDriveById = asyncHandler(async (req, res) => {
-  const drive = await PlacementDrive.findById(req.params.id);
+  const query = req.user.role === 'student'
+    ? { _id: req.params.id }
+    : applyDriveScope({ _id: req.params.id }, req);
+  const drive = await PlacementDrive.findOne(query);
   if (!drive) {
     res.status(404);
     throw new Error('Drive not found');
@@ -86,8 +88,14 @@ export const getDriveById = asyncHandler(async (req, res) => {
 });
 
 export const updateDrive = asyncHandler(async (req, res) => {
-  const oldDrive = await PlacementDrive.findById(req.params.id).lean();
-  const drive = await PlacementDrive.findByIdAndUpdate(req.params.id, req.body, {
+  const scopedQuery = applyDriveScope({ _id: req.params.id }, req);
+  const oldDrive = await PlacementDrive.findOne(scopedQuery).lean();
+  if (!oldDrive) {
+    res.status(404);
+    throw new Error('Drive not found');
+  }
+
+  const drive = await PlacementDrive.findOneAndUpdate(scopedQuery, req.body, {
     new: true,
     runValidators: true,
   });
@@ -108,7 +116,7 @@ export const updateDrive = asyncHandler(async (req, res) => {
 });
 
 export const deleteDrive = asyncHandler(async (req, res) => {
-  const drive = await PlacementDrive.findByIdAndDelete(req.params.id);
+  const drive = await PlacementDrive.findOneAndDelete(applyDriveScope({ _id: req.params.id }, req));
   if (!drive) {
     res.status(404);
     throw new Error('Drive not found');

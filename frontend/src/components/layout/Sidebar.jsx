@@ -3,8 +3,9 @@ import { useSelector } from 'react-redux';
 import { X } from 'lucide-react';
 import {
   LayoutDashboard, User, Building2, FileText, Bell, FileUp,
-  Users, BarChart3, Download, Briefcase, ClipboardList, Settings, Megaphone, Gauge, Award, ShieldCheck, CalendarDays, Target,
+  Users, BarChart3, Download, Briefcase, ClipboardList, Settings, Megaphone, Gauge, Award, ShieldCheck, CalendarDays, Target, GraduationCap,
 } from 'lucide-react';
+import { hasPermission, isStaffRole, PERMISSIONS } from '../../utils/rbac';
 
 const studentLinks = [
   { to: '/student/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -13,6 +14,7 @@ const studentLinks = [
   { to: '/student/applications', label: 'Applications', icon: FileText },
   { to: '/student/history', label: 'History', icon: ClipboardList },
   { to: '/student/schedule', label: 'Schedule', icon: CalendarDays },
+  { to: '/student/development', label: 'Development', icon: GraduationCap },
   { to: '/student/resume', label: 'Resume & AI', icon: FileUp },
   { to: '/student/readiness', label: 'Readiness', icon: Gauge },
   { to: '/student/offers', label: 'Offers', icon: Award },
@@ -21,25 +23,28 @@ const studentLinks = [
 ];
 
 const adminLinks = [
-  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { to: '/admin/students', label: 'Students', icon: Users },
-  { to: '/admin/applications', label: 'Applications', icon: ClipboardList },
-  { to: '/admin/eligibility', label: 'Eligibility', icon: Target },
-  { to: '/admin/scheduler', label: 'Scheduler', icon: CalendarDays },
-  { to: '/admin/offers', label: 'Offers', icon: Award },
-  { to: '/admin/companies', label: 'Companies', icon: Briefcase },
-  { to: '/admin/drives', label: 'Drives', icon: Building2 },
-  { to: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/admin/reports', label: 'Reports', icon: Download },
-  { to: '/admin/audit', label: 'Audit', icon: ShieldCheck },
-  { to: '/admin/policies', label: 'Policies', icon: Settings },
-  { to: '/admin/notifications', label: 'Inbox', icon: Bell },
-  { to: '/admin/broadcast', label: 'Broadcast', icon: Megaphone },
+  { to: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard, permission: PERMISSIONS.VIEW_DASHBOARD },
+  { to: '/admin/students', label: 'Students', icon: Users, permission: PERMISSIONS.VIEW_STUDENTS },
+  { to: '/admin/applications', label: 'Applications', icon: ClipboardList, permission: PERMISSIONS.VIEW_APPLICATIONS },
+  { to: '/admin/eligibility', label: 'Eligibility', icon: Target, permission: PERMISSIONS.VIEW_STUDENTS },
+  { to: '/admin/scheduler', label: 'Scheduler', icon: CalendarDays, permission: PERMISSIONS.VIEW_APPLICATIONS },
+  { to: '/admin/offers', label: 'Offers', icon: Award, permission: PERMISSIONS.VIEW_OFFERS },
+  { to: '/admin/companies', label: 'Companies', icon: Briefcase, permission: PERMISSIONS.VIEW_DRIVES },
+  { to: '/admin/drives', label: 'Drives', icon: Building2, permission: PERMISSIONS.VIEW_DRIVES },
+  { to: '/admin/analytics', label: 'Analytics', icon: BarChart3, permission: PERMISSIONS.VIEW_ANALYTICS },
+  { to: '/admin/reports', label: 'Reports', icon: Download, permission: PERMISSIONS.VIEW_REPORTS },
+  { to: '/admin/audit', label: 'Audit', icon: ShieldCheck, permission: PERMISSIONS.VIEW_AUDIT_LOGS },
+  { to: '/admin/policies', label: 'Policies', icon: Settings, permission: PERMISSIONS.MANAGE_DRIVES },
+  { to: '/admin/enterprise', label: 'Enterprise', icon: GraduationCap, permission: PERMISSIONS.VIEW_REPORTS },
+  { to: '/admin/notifications', label: 'Inbox', icon: Bell, permission: PERMISSIONS.VIEW_DASHBOARD },
+  { to: '/admin/broadcast', label: 'Broadcast', icon: Megaphone, permission: PERMISSIONS.SEND_NOTIFICATIONS },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 
 export default function Sidebar({ role, open, onClose }) {
-  const links = role === 'admin' ? adminLinks : studentLinks;
+  const links = isStaffRole(role)
+    ? adminLinks.filter((link) => !link.permission || hasPermission(role, link.permission))
+    : studentLinks;
   const { profile, user } = useSelector((s) => s.auth);
   const { unreadCount } = useSelector((s) => s.notifications);
   const initial = (profile?.fullName || user?.email || '?').charAt(0).toUpperCase();

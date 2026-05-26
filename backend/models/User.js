@@ -32,6 +32,10 @@ const userSchema = new mongoose.Schema(
     },
     mustChangePassword: { type: Boolean, default: false },
     isActive: { type: Boolean, default: true },
+    loginAttempts: { type: Number, default: 0, select: false },
+    lockUntil: { type: Date, default: null, select: false },
+    tokenVersion: { type: Number, default: 0 },
+    passwordChangedAt: Date,
     resetPasswordToken: String,
     resetPasswordExpire: Date,
     profileImage: { type: String, default: null },
@@ -45,6 +49,7 @@ userSchema.index({ role: 1 });
 userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
+  this.passwordChangedAt = new Date();
   next();
 });
 

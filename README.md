@@ -153,15 +153,3 @@ See [docs/API.md](docs/API.md).
 
 MIT
 
-
-//Admin Login:
-  Email: admin@college.edu
-  Password: admin123
-
-Student Logins (password: student123):
-  rahul@cse.edu
-  priya@it.edu
-  amit@ece.edu
-  sneha@cse.edu
-  vikram@mech.edu
-  sadaf@it.edu

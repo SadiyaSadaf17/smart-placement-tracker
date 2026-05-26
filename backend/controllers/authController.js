@@ -4,6 +4,7 @@ import Student from '../models/Student.js';
 import Admin from '../models/Admin.js';
 import asyncHandler from '../utils/asyncHandler.js';
 import { generateToken } from '../utils/generateToken.js';
+import { assertStrongPassword } from '../utils/passwordPolicy.js';
 import { sendPasswordResetEmail } from '../services/emailService.js';
 import { logActivity } from '../services/activityService.js';
 import { logAudit } from '../services/auditService.js';
@@ -15,7 +16,7 @@ import {
 const sendAuthResponse = (res, user, profile) => {
   res.status(200).json({
     success: true,
-    token: generateToken(user._id),
+    token: generateToken(user),
     user: {
       _id: user._id,
       email: user.email,
@@ -29,6 +30,7 @@ const sendAuthResponse = (res, user, profile) => {
 
 export const registerStudent = asyncHandler(async (req, res) => {
   const { email, password, fullName, rollNumber, branch, cgpa, phone } = req.body;
+  assertStrongPassword(password);
 
   const exists = await User.findOne({ email });
   if (exists) {
@@ -58,10 +60,33 @@ export const registerStudent = asyncHandler(async (req, res) => {
 });
 
 export const login = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  const email = String(req.body.email || '').toLowerCase().trim();
 
-  const user = await User.findOne({ email }).select('+password');
+  const user = await User.findOne({ email }).select('+password +loginAttempts +lockUntil');
+  if (user?.lockUntil && user.lockUntil > Date.now()) {
+    await logAudit({
+      actor: user,
+      actionType: 'LOGIN_BLOCKED_LOCKOUT',
+      targetEntity: 'User',
+      targetId: user._id,
+      newValues: { email },
+      ipAddress: req.ip,
+    });
+    res.status(423);
+    throw new Error('Account is temporarily locked. Try again later or reset your password.');
+  }
+
   if (!user || !(await user.matchPassword(password))) {
+    if (user) {
+      const attempts = (user.loginAttempts || 0) + 1;
+      user.loginAttempts = attempts;
+      if (attempts >= 5) {
+        user.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
+      }
+      await user.save({ validateBeforeSave: false });
+    }
+
     await logAudit({
       actor: user || null,
       actionType: 'LOGIN_FAILED',
@@ -77,6 +102,12 @@ export const login = asyncHandler(async (req, res) => {
   if (!user.isActive) {
     res.status(403);
     throw new Error('Account has been deactivated. Contact placement cell.');
+  }
+
+  if (user.loginAttempts || user.lockUntil) {
+    user.loginAttempts = 0;
+    user.lockUntil = null;
+    await user.save({ validateBeforeSave: false });
   }
 
   let profile = null;
@@ -140,6 +171,7 @@ export const forgotPassword = asyncHandler(async (req, res) => {
 });
 
 export const resetPassword = asyncHandler(async (req, res) => {
+  assertStrongPassword(req.body.password);
   const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
 
   const user = await User.findOne({
@@ -154,6 +186,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
 
   user.password = req.body.password;
   user.mustChangePassword = false;
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
   user.resetPasswordToken = undefined;
   user.resetPasswordExpire = undefined;
   await user.save();
@@ -162,6 +195,7 @@ export const resetPassword = asyncHandler(async (req, res) => {
 });
 
 export const logout = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(req.user._id, { $inc: { tokenVersion: 1 } });
   await logActivity({ user: req.user._id, action: 'LOGOUT', ip: req.ip });
   await logAudit({
     actor: req.user,
@@ -176,6 +210,7 @@ export const logout = asyncHandler(async (req, res) => {
 /* -------------------- CHANGE PASSWORD -------------------- */
 export const changePassword = asyncHandler(async (req, res) => {
   const { currentPassword, newPassword } = req.body;
+  assertStrongPassword(newPassword);
 
   if (currentPassword === newPassword) {
     res.status(400);
@@ -195,10 +230,12 @@ export const changePassword = asyncHandler(async (req, res) => {
 
   user.password = newPassword;
   user.mustChangePassword = false;
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
   await user.save();
 
   res.json({
     success: true,
+    token: generateToken(user),
     message: 'Password changed successfully',
     user: {
       _id: user._id,

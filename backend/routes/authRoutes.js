@@ -20,7 +20,7 @@ router.post(
   '/register',
   validate({
     email: { required: true, email: true },
-    password: { required: true, minLength: 6 },
+    password: { required: true, minLength: 8 },
     fullName: { required: true, minLength: 2 },
     rollNumber: { required: true },
     branch: { required: true },
@@ -36,7 +36,13 @@ router.post(
   login
 );
 router.post('/forgot-password', forgotPassword);
-router.put('/reset-password/:token', resetPassword);
+router.put(
+  '/reset-password/:token',
+  validate({
+    password: { required: true, minLength: 8 },
+  }),
+  resetPassword
+);
 router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
 
@@ -45,7 +51,7 @@ router.put(
   protect,
   validate({
     currentPassword: { required: true },
-    newPassword: { required: true, minLength: 6 },
+    newPassword: { required: true, minLength: 8 },
   }),
   changePassword
 );

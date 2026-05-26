@@ -34,6 +34,11 @@ export const protect = asyncHandler(async (req, res, next) => {
     throw new Error('Not authorized');
   }
 
+  if (decoded.tokenVersion !== undefined && decoded.tokenVersion !== user.tokenVersion) {
+    res.status(401);
+    throw new Error('Session expired, please login again');
+  }
+
   req.user = user;
 
   if (user.role === 'student') {
@@ -68,6 +73,15 @@ export const requirePermission = (permission) =>
     if (!hasPermission(req.user.role, permission)) {
       res.status(403);
       throw new Error(`Missing permission: ${permission}`);
+    }
+    next();
+  });
+
+export const requireAnyPermission = (...permissions) =>
+  asyncHandler(async (req, res, next) => {
+    if (!permissions.some((permission) => hasPermission(req.user.role, permission))) {
+      res.status(403);
+      throw new Error(`Missing permission: ${permissions.join(' or ')}`);
     }
     next();
   });

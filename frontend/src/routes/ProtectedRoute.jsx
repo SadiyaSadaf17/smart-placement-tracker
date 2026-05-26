@@ -1,8 +1,9 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import Spinner from '../components/ui/Spinner';
+import { hasPermission, isStaffRole } from '../utils/rbac';
 
-export default function ProtectedRoute({ role }) {
+export default function ProtectedRoute({ role, permission }) {
   const { token, user, loading, bootstrapped } = useSelector((s) => s.auth);
   const location = useLocation();
 
@@ -16,17 +17,26 @@ export default function ProtectedRoute({ role }) {
     );
   }
 
-  if (role && user?.role !== role) {
+  const roleAllowed = !role
+    || user?.role === role
+    || (role === 'admin' && isStaffRole(user?.role));
+
+  if (!roleAllowed) {
     return (
       <Navigate
-        to={user?.role === 'admin' ? '/admin/dashboard' : '/student/dashboard'}
+        to={isStaffRole(user?.role) ? '/admin/dashboard' : '/student/dashboard'}
         replace
       />
     );
   }
 
-  if (user?.mustChangePassword && location.pathname !== '/student/change-password') {
-    return <Navigate to="/student/change-password" replace />;
+  if (permission && !hasPermission(user?.role, permission)) {
+    return <Navigate to="/404" replace />;
+  }
+
+  const changePasswordPath = isStaffRole(user?.role) ? '/admin/change-password' : '/student/change-password';
+  if (user?.mustChangePassword && location.pathname !== changePasswordPath) {
+    return <Navigate to={changePasswordPath} replace />;
   }
 
   return <Outlet />;

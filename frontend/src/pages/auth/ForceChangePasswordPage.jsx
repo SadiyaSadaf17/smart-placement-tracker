@@ -6,7 +6,7 @@ import api from '../../services/api';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
-import { updateAuthUser } from '../../redux/slices/authSlice';
+import { updateAuthSession } from '../../redux/slices/authSlice';
 
 const initialForm = {
   currentPassword: '',
@@ -29,7 +29,7 @@ export default function ForceChangePasswordPage() {
   const validate = () => {
     const nextErrors = {};
     if (!form.currentPassword) nextErrors.currentPassword = 'Current password is required';
-    if (form.newPassword.length < 6) nextErrors.newPassword = 'Password must be at least 6 characters';
+    if (form.newPassword.length < 8) nextErrors.newPassword = 'Password must be at least 8 characters';
     if (form.newPassword === 'student123') nextErrors.newPassword = 'Choose a password different from the default';
     if (form.currentPassword && form.currentPassword === form.newPassword) {
       nextErrors.newPassword = 'Use a different password';
@@ -49,7 +49,7 @@ export default function ForceChangePasswordPage() {
         currentPassword: form.currentPassword,
         newPassword: form.newPassword,
       });
-      dispatch(updateAuthUser(data.user));
+      dispatch(updateAuthSession({ user: data.user, token: data.token }));
       toast.success('Password updated. Your account is ready.');
     } catch (error) {
       const message = error.response?.data?.message || 'Could not change password';
@@ -88,7 +88,7 @@ export default function ForceChangePasswordPage() {
             type="password"
             value={form.newPassword}
             error={errors.newPassword}
-            hint="Minimum 6 characters. Do not reuse student123."
+            hint="Use at least 8 characters with uppercase, lowercase, number, and symbol."
             onChange={(event) => updateField('newPassword', event.target.value)}
           />
           <Input
