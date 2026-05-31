@@ -153,3 +153,8 @@ See [docs/API.md](docs/API.md).
 
 MIT
 
+rahul@cse.edu
+  priya@it.edu
+  amit@ece.edu
+  sneha@cse.edu
+  vikram@mech.edu

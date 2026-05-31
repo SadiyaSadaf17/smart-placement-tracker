@@ -82,31 +82,45 @@ const parseWorkbookRows = (file) => {
   });
 };
 
+const normalizeOptionalEmail = (value) => {
+  const email = cleanString(value).toLowerCase();
+  return email ? email : undefined;
+};
+
 const normalizeRow = (raw) => ({
   email: cleanString(raw.email).toLowerCase(),
   fullName: cleanString(raw.fullName),
   phone: cleanString(raw.phone),
-  personalEmail: cleanString(raw.personalEmail).toLowerCase(),
-  collegeEmail: cleanString(raw.collegeEmail).toLowerCase(),
+
+  personalEmail: normalizeOptionalEmail(raw.personalEmail),
+  collegeEmail: normalizeOptionalEmail(raw.collegeEmail),
+
   gender: cleanString(raw.gender).toLowerCase(),
   dateOfBirth: cleanString(raw.dateOfBirth),
   address: cleanString(raw.address),
+
   rollNumber: cleanString(raw.rollNumber).toUpperCase(),
   batchYear: cleanString(raw.batchYear),
   section: cleanString(raw.section).toUpperCase(),
   branch: cleanString(raw.branch).toUpperCase(),
   department: cleanString(raw.department),
+
   academicYear: toNumber(raw.academicYear),
   currentYear: toNumber(raw.currentYear),
+
   cgpa: toNumber(raw.cgpa),
   graduationPercentage: toNumber(raw.graduationPercentage),
   tenthPercentage: toNumber(raw.tenthPercentage),
   twelfthPercentage: toNumber(raw.twelfthPercentage),
   diplomaPercentage: toNumber(raw.diplomaPercentage),
+
   skills: parseSkills(raw.skills),
+
   backlogs: toNumber(raw.backlogs) ?? toNumber(raw.activeBacklogs) ?? 0,
   activeBacklogs: toNumber(raw.activeBacklogs) ?? toNumber(raw.backlogs) ?? 0,
-  placementConsentStatus: cleanString(raw.placementConsentStatus) || 'pending',
+
+  placementConsentStatus:
+    cleanString(raw.placementConsentStatus) || 'pending',
 });
 
 const requiredErrors = (data) =>

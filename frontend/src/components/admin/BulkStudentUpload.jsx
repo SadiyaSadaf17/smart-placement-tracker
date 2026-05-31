@@ -120,23 +120,46 @@ export default function BulkStudentUpload({ onImported }) {
       setUploading(false);
     }
   };
+const commitUpload = async () => {
+  if (!batch?.batchId) {
+    toast.error('Batch ID is missing');
+    return;
+  }
 
-  const commitUpload = async () => {
-    if (!batch?.batchId) return;
-    setCommitting(true);
-    try {
-      const { data } = await api.post(`/admin/students/bulk/${batch.batchId}/commit`);
-      setCredentials(data.data.credentials || []);
-      toast.success(`${data.data.imported} students imported`);
-      onImported?.();
-      await fetchBatchPage(batch.batchId, page);
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Import failed');
-    } finally {
-      setCommitting(false);
-    }
-  };
+  console.log('Batch ID:', batch.batchId);
 
+  setCommitting(true);
+
+  try {
+    const response = await api.post(
+      `/admin/students/bulk/${batch.batchId}/commit`
+    );
+
+    console.log('Commit Success:', response.data);
+
+    setCredentials(response.data?.data?.credentials || []);
+
+    toast.success(
+      `${response.data?.data?.imported || 0} students imported`
+    );
+
+    onImported?.();
+
+    await fetchBatchPage(batch.batchId, page);
+  } catch (err) {
+    console.error('Commit Error:', err);
+    console.error('Status:', err.response?.status);
+    console.error('Response:', err.response?.data);
+
+    toast.error(
+      err.response?.data?.message ||
+      err.response?.data?.error ||
+      'Import failed'
+    );
+  } finally {
+    setCommitting(false);
+  }
+};
   return (
     <Card title="Bulk Student Upload" subtitle="Preview, validate, and import students from Excel or CSV" hoverable={false}>
       <div className="space-y-5">
