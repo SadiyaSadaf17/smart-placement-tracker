@@ -33,7 +33,7 @@ export default function LandingPage() {
           </p>
           <span className="mt-10 flex flex-wrap justify-center gap-4">
             <Link to="/register"><Button size="lg">Register as Student <ArrowRight size={18} /></Button></Link>
-            <Link to="/login"><Button size="lg" variant="outline" className="border-slate-600 text-white">Admin Login</Button></Link>
+            <Link to="/login"><Button size="lg" variant="outline" className="border-slate-600 text-white">Login</Button></Link>
           </span>
         </section>
 
